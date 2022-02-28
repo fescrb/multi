@@ -13,7 +13,7 @@ namespace multi {
 namespace details {
 
 template<class... Ts>
-constexpr std::size_t max_alignof;
+constexpr std::size_t max_alignof = 1;
 
 template<class T, class... Ts>
 constexpr std::size_t max_alignof<T, Ts...> = std::max(alignof(T), max_alignof<Ts...>);

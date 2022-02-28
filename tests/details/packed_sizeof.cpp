@@ -17,4 +17,5 @@ TEST(packed_sizeof, static_assert) {
     };
 #pragma pack(pop, t1)
     static_assert(multi::details::packed_sizeof<bool, int, double> == sizeof(packed_test));
+    static_assert(multi::details::packed_sizeof<> == 0);
 }

@@ -44,6 +44,9 @@ struct subsequence<std::index_sequence<Is...>, Ts> {
     using type = type_sequence<typename sequence_element<Is, Ts>::type...>;
 };
 
+template<std::size_t I, class Ts>
+using take_subsequence_t = subsequence<std::make_index_sequence<I>, Ts>::type;
+
 template<class... Ts>
 constexpr std::size_t packed_sizeof<type_sequence<Ts...>> = packed_sizeof<Ts...>;
 
