@@ -9,13 +9,17 @@
 
 #include <tuple>
 #include <memory_resource>
+#include <cstring>
 
 namespace multi {
 
 template<class T, class... Ts>
-class vector {
+class vector final {
 public:
     using value_type = std::tuple<T, Ts...>;
+    using reference = std::tuple<T&, Ts&...>;
+    using type_sequence = details::type_sequence<T, Ts...>;
+    using index_sequence = std::make_index_sequence<type_sequence::size()>;
     using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
 
     constexpr vector(allocator_type allocator = {}) : _data(nullptr), _size(0), _capacity(0), _allocator(allocator) {}
@@ -28,11 +32,87 @@ public:
         return size() == 0;
     }
 
+    constexpr auto capacity() const noexcept -> std::size_t {
+        return _capacity;
+    }
+
+    constexpr auto push_back(const value_type& value) -> void {
+        if(_size + 1 > _capacity) {
+            reserve(std::max(_capacity, 1ul) * 2ul);
+        }
+        operator[](_size) = value;
+        _size++;
+    }
+
+    constexpr auto reserve(const std::size_t& capacity) -> void {
+        std::size_t new_capacity = round_capacity(capacity);
+        std::byte* new_data = static_cast<std::byte*>(_allocator.allocate_bytes(new_capacity*packed_sizeof, max_alignof));
+        if (_data) {
+            [this] <std::size_t... Is>
+            (std::byte* new_data, const std::size_t& new_capacity, std::index_sequence<Is...>) {
+                return std::min({move_column<Is>(new_data, new_capacity, _data, _capacity, _size)...,});
+            }(new_data, new_capacity, index_sequence{});
+        }
+        _allocator.deallocate_bytes(_data, _capacity*packed_sizeof, max_alignof);
+        _data = new_data;
+        _capacity = new_capacity;
+    }
+
+    template<std::size_t I>
+    inline auto data() -> details::sequence_element_t<I, type_sequence>* {
+        return column<I>(_data, _capacity);
+    }
+
+    template<std::size_t I>
+    inline auto data() const -> const details::sequence_element_t<I, type_sequence>* {
+        return column<I>(_data, _capacity);
+    }
+
+    inline auto operator[](const std::size_t index) -> reference {
+        return [this] <std::size_t... Is> 
+        (const std::size_t index, std::index_sequence<Is...>) {
+            return std::tie((*(data<Is>() + index))...);
+        }(index, index_sequence{});
+    }
+
+    inline auto operator[](const std::size_t index) const -> const reference {
+        return [this] <std::size_t... Is> 
+        (const std::size_t index, std::index_sequence<Is...>) {
+            return std::tie((*(data<Is>()+index))...);
+        }(index, index_sequence{});
+    }
+
 private:
+    constexpr static std::size_t packed_sizeof = details::packed_sizeof<type_sequence>;
+    constexpr static std::size_t max_alignof = details::max_alignof<type_sequence>;
+
     std::byte* _data;
     std::size_t _size;
     std::size_t _capacity;
     allocator_type _allocator;
+
+    template<std::size_t I>
+    constexpr static auto column(const std::byte* data, const std::size_t& capacity) -> const details::sequence_element_t<I, type_sequence>* {
+        return reinterpret_cast<const details::sequence_element_t<I, type_sequence>*>(data + capacity * details::packed_sizeof<details::take_subsequence_t<I, type_sequence>>);
+    }
+
+    template<std::size_t I>
+    constexpr static auto column(std::byte* data, const std::size_t& capacity) -> details::sequence_element_t<I, type_sequence>* {
+        return reinterpret_cast<details::sequence_element_t<I, type_sequence>*>(data + capacity * details::packed_sizeof<details::take_subsequence_t<I, type_sequence>>);
+    }
+
+    template<std::size_t I>
+    constexpr static auto move_column(std::byte* dst, const std::size_t& dst_capacity, const std::byte* src, const std::size_t& src_capacity, const std::size_t& size) -> std::byte* {
+        return reinterpret_cast<std::byte*>(std::memcpy(
+            column<I>(dst, dst_capacity),
+            column<I>(src, src_capacity), 
+            size*sizeof(details::sequence_element_t<I, type_sequence>)
+        ));
+    }
+
+    constexpr static auto round_capacity(const std::size_t& capacity) -> std::size_t {
+        return capacity + (max_alignof - (capacity % max_alignof));
+    }
 };
 
 } // namespace multi
