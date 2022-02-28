@@ -17,7 +17,9 @@ jobs:
             apt install cmake -y
       - run:
           name: "Build"
-          command: "cmake ."
+          command: |
+            cmake .
+            make
       - run:
           name: "Run tests"
           command: "tests/tests"
