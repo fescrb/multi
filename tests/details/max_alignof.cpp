@@ -8,5 +8,5 @@
 #include <gtest/gtest.h>
 
 TEST(max_alignof, static_assert) {
-    static_assert(multi::max_alignof<char, double, int> == std::max({alignof(char), alignof(double), alignof(int)}));
+    static_assert(multi::max_alignof<char, int, double> == std::max({alignof(char), alignof(int), alignof(double)}));
 }
