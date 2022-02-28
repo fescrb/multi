@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include <cstddef>
-
 #include <multi/details/packed_sizeof.hpp>
 #include <multi/details/max_alignof.hpp>
 
