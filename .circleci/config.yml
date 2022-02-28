@@ -1,0 +1,27 @@
+# See: https://circleci.com/docs/2.0/configuration-reference
+version: 2.1
+
+# See: https://circleci.com/docs/2.0/configuration-reference/#jobs
+jobs:
+  run-tests:
+    docker:
+      - image: gcc:latest
+    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
+    steps:
+      - checkout
+      - run:
+          name: "Setup"
+          command: "apt update -y && apt install cmake -y"
+      - run:
+          name: "Build"
+          command: "cmake ."
+      - run:
+          name: "Run tests"
+          command: "tests/tests"
+
+
+# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
+workflows:
+  tests-workflow:
+    jobs:
+      - run-tests
