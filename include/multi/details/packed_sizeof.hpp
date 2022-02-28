@@ -9,6 +9,8 @@
 
 namespace multi {
 
+namespace details {
+
 template<class... Ts>
 constexpr std::size_t packed_sizeof = 0;
 
@@ -18,5 +20,6 @@ constexpr std::size_t packed_sizeof<T, Ts...> = sizeof(T) + packed_sizeof<Ts...>
 template<class T>
 constexpr std::size_t packed_sizeof<T> = sizeof(T);
 
+} // namespace details
 
 } // namespace multi

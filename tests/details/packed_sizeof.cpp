@@ -7,14 +7,14 @@
 
 #include <gtest/gtest.h>
 
-#pragma pack(push, t1, 1)
-struct packed_test {
-    bool v0; 
-    int v1;
-    double v2;
-};
-#pragma pack(pop, t1)
 
 TEST(packed_sizeof, static_assert) {
-    static_assert(multi::packed_sizeof<bool, int, double> == sizeof(packed_test));
+#pragma pack(push, t1, 1)
+    struct packed_test {
+        bool v0; 
+        int v1;
+        double v2;
+    };
+#pragma pack(pop, t1)
+    static_assert(multi::details::packed_sizeof<bool, int, double> == sizeof(packed_test));
 }

@@ -10,6 +10,8 @@
 
 namespace multi {
 
+namespace details {
+
 template<class... Ts>
 constexpr std::size_t max_alignof;
 
@@ -18,5 +20,7 @@ constexpr std::size_t max_alignof<T, Ts...> = std::max(alignof(T), max_alignof<T
 
 template<class T>
 constexpr std::size_t max_alignof<T> = alignof(T);
+
+} // namespace details
 
 } // namespace multi

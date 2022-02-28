@@ -4,7 +4,8 @@
 #          https://www.boost.org/LICENSE_1_0.txt)
 
 list(APPEND sources ${CMAKE_CURRENT_SOURCE_DIR}/details/max_alignof.cpp
-                    ${CMAKE_CURRENT_SOURCE_DIR}/details/packed_sizeof.cpp)
+                    ${CMAKE_CURRENT_SOURCE_DIR}/details/packed_sizeof.cpp
+                    ${CMAKE_CURRENT_SOURCE_DIR}/details/type_sequence.cpp)
 
 add_executable(tests ${sources})
 
