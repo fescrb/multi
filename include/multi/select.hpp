@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <utility>
 #include <iterator>
 #include <ranges>
 #include <tuple>
@@ -16,26 +17,37 @@ concept selectable = requires (const T& t) {
     t.template select<I, Is...>();
 };
 
+template<class T, std::size_t I, std::size_t... Is>
+using select_t = decltype(std::declval<T>().template select<I, Is...>());
+
 template<class R, std::size_t I, std::size_t... Is>
-    requires std::ranges::view<R> && selectable<std::ranges::iterator_t<R>, I, Is...>
+    requires std::ranges::range<R> && selectable<std::ranges::iterator_t<R>, I, Is...>
 class select_view final : public std::ranges::view_interface<select_view<R, I, Is...>> {
 public:
-    auto begin() const { return std::ranges::begin(_range).template select<I, Is...>(); }
-    auto end() const { return std::ranges::end(_range).template select<I, Is...>(); }
+    using iterator_type = select_t<std::ranges::iterator_t<R>, I, Is...>;
+    auto begin() const { return _begin; }
+    auto end() const { return _end; }
 
     
     constexpr select_view() = default;
-    constexpr select_view(const R range) : _range(range) {}
-    constexpr select_view(R&& range) : _range(std::move(range)) {}
+    constexpr select_view(R& range) 
+    :   _begin(std::ranges::begin(range).template select<I, Is...>()),
+        _end(std::ranges::end(range).template select<I, Is...>()) {}
+
+    constexpr select_view(const select_view&) = default;
+    constexpr select_view(select_view&&) = default;
+
+    constexpr auto operator=(const select_view&) -> select_view& = default;
+    constexpr auto operator=(select_view&&) -> select_view& = default;
 
 private:
-    mutable R _range;
+    iterator_type _begin, _end;
 };
 
 template<std::size_t I, std::size_t... Is>
 struct select_fn final {
     template<class R>
-    auto operator()(const R& range) const {
+    auto operator()(R& range) const {
         return select_view<R, I, Is...>(range);
     }
 
@@ -52,7 +64,7 @@ struct select_fn final {
 
     template<class R>
         requires std::ranges::range<R>
-    friend decltype(auto) operator|(const R& range, const select_fn& fun) {
+    friend decltype(auto) operator|(R& range, const select_fn& fun) {
         return fun(range);
     }
 };

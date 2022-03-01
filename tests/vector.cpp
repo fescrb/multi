@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 
 #include <rand.hpp>
+#include <multi/select.hpp>
 
 TEST(vector, empty) {
     multi::vector<bool, int, double> empty_v;
@@ -135,6 +136,23 @@ TEST(vector, at) {
     for(int i = 0; i < CAPACITY; i++) {
         EXPECT_EQ(v[i], std_v[i]);
     }
+}
+
+TEST(vector, range_constraints) {
+    constexpr std::size_t CAPACITY = 100;
+    static_assert(std::ranges::range<multi::vector<int>>);
+    multi::vector<bool, int, double> v;
+    for(int _ = 0; _ < CAPACITY ; ++_) {
+        auto val = rand_tuple<bool, int, double>();
+        v.push_back(val);
+    }
+
+    ASSERT_GE(v.size(), CAPACITY);
+    ASSERT_GE(v.capacity(), CAPACITY);
+    ASSERT_TRUE(!v.empty());
+    
+    EXPECT_EQ(std::ranges::begin(v), v.begin());
+    EXPECT_EQ(std::ranges::end(v), v.end());
 }
 
 TEST(vector_iterator, increment) {
@@ -408,4 +426,10 @@ TEST(vector_iterator, select) {
         ++it;
         ++std_it;
     }
+}
+
+TEST(vector_iterator, constraint_passing) {
+    static_assert(std::random_access_iterator<multi::vector<int>::iterator<0>>);
+    static_assert(multi::selectable<multi::vector<int>::iterator<0>, 0>);
+    static_assert(multi::selectable<multi::vector<bool, int>::iterator<0, 1>, 0>);
 }
