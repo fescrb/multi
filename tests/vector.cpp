@@ -172,8 +172,8 @@ TEST(vector_iterator, add) {
 
     while(it < v.end()) {
         EXPECT_EQ(*it, *std_it);
-        it+=2;
-        std_it+=2;
+        it+=step;
+        std_it+=step;
     }
     
     for(int i = 0; i < CAPACITY; i++) {
@@ -185,8 +185,17 @@ TEST(vector_iterator, add) {
 
     while(it < v.end()) {
         EXPECT_EQ(*it, *std_it);
-        it = it + 2;
-        std_it= std_it + 2;
+        it = it + step;
+        std_it= std_it + step;
+    }
+
+    it = v.begin();
+    std_it = std_v.begin();
+
+    while(it < v.end()) {
+        EXPECT_EQ(*it, *std_it);
+        it = step + it;
+        std_it = step + std_it;
     }
     
     for(int i = 0; i < CAPACITY; i++) {
@@ -329,8 +338,8 @@ TEST(vector_iterator, subtract) {
 
     while(it >= v.begin()) {
         EXPECT_EQ(*it, *std_it);
-        it-=2;
-        std_it-=2;
+        it-=step;
+        std_it-=step;
     }
     
     for(int i = 0; i < CAPACITY; i++) {
@@ -342,8 +351,8 @@ TEST(vector_iterator, subtract) {
 
     while(it >= v.begin()) {
         EXPECT_EQ(*it, *std_it);
-        it = it - 2;
-        std_it= std_it - 2;
+        it = it - step;
+        std_it= std_it - step;
     }
     
     for(int i = 0; i < CAPACITY; i++) {

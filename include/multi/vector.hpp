@@ -289,6 +289,10 @@ public:
         return (*_vector)[_index+idx];
     }
 
+    friend constexpr auto operator+(const difference_type diff, const iterator& it) {
+        return it + diff;
+    }
+
 private:
     constexpr iterator(vector_type& vector, const std::size_t& index)
     :    _index(index), _vector(&vector) {}
@@ -298,10 +302,5 @@ private:
     difference_type _index;
     mutable vector_type* _vector;
 };
-
-template<class T, class... Ts, std::size_t I, std::size_t... Is>
-constexpr auto operator+(const typename vector<T,Ts...>::iterator<I, Is...>::diference_type diff, const typename vector<T,Ts...>::iterator<I, Is...>& it) {
-    return it + diff;
-}
 
 } // namespace multi
