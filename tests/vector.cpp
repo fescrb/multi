@@ -41,14 +41,19 @@ TEST(vector, push_back_and_element_access) {
 
     for(int _ = 0; _ < CAPACITY ; ++_) {
         auto val = rand_tuple<bool, int, double>();
+        auto collected_val = std::make_tuple(std::get<0>(val), std::get<1>(val));
         v.push_back(val);
         std_v.push_back(val);
         EXPECT_EQ(v[v.size()-1], val);
         EXPECT_EQ(v.back(), val);
         EXPECT_EQ(v.front(), std_v[0]);
+        auto col_read = v.template collect<0, 1>(v.size()-1);
+        EXPECT_EQ(col_read, collected_val);
         EXPECT_EQ(const_v[v.size()-1], val);
         EXPECT_EQ(const_v.back(), val);
         EXPECT_EQ(const_v.front(), std_v[0]);
+        auto const_col_read = const_v.template collect<0, 1>(v.size()-1);
+        EXPECT_EQ(const_col_read, collected_val);
     }
 
     EXPECT_EQ(v.size(), CAPACITY);
@@ -357,5 +362,31 @@ TEST(vector_iterator, subtract) {
     
     for(int i = 0; i < CAPACITY; i++) {
         EXPECT_EQ(v[i], std_v[i]);
+    }
+}
+
+TEST(vector_iterator, select) {
+    constexpr std::size_t CAPACITY = 100;
+    multi::vector<bool, int, double> v;
+    std::vector<std::tuple<bool, int, double>> std_v;
+
+    for(int _ = 0; _ < CAPACITY ; ++_) {
+        auto val = rand_tuple<bool, int, double>();
+        v.push_back(val);
+        std_v.push_back(val);
+    }
+
+    ASSERT_GE(v.size(), CAPACITY);
+    ASSERT_GE(v.capacity(), CAPACITY);
+    ASSERT_TRUE(!v.empty());
+
+    auto it = v.begin().template select<0, 1>();
+    auto std_it = std_v.begin();
+
+    while(it != v.end().template select<0, 1>()) {
+        auto std_tup = std::make_tuple(std::get<0>(*std_it), std::get<1>(*std_it));
+        EXPECT_EQ(*it, std_tup);
+        ++it;
+        ++std_it;
     }
 }

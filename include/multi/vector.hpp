@@ -97,16 +97,16 @@ public:
     }
 
     inline auto operator[](const std::size_t& index) -> reference {
-        return [this] <std::size_t... Is> 
-        (const std::size_t index, std::index_sequence<Is...>) {
-            return std::tie((*(data<Is>() + index))...);
+        return [this] <std::size_t I, std::size_t... Is> 
+        (const std::size_t index, std::index_sequence<I, Is...>) {
+            return collect<I, Is...>(index);
         }(index, index_sequence{});
     }
 
     inline auto operator[](const std::size_t& index) const -> const_reference {
-        return [this] <std::size_t... Is> 
-        (const std::size_t& index, std::index_sequence<Is...>) {
-            return std::tie((*(data<Is>()+index))...);
+        return [this] <std::size_t I, std::size_t... Is> 
+        (const std::size_t& index, std::index_sequence<I, Is...>) {
+            return collect<I, Is...>(index);
         }(index, index_sequence{});
     }
 
@@ -118,7 +118,17 @@ public:
     constexpr auto at(const std::size_t& index) const -> const_reference {
         assert(index < _size);
         return operator[](index);
-    } 
+    }
+
+    template<std::size_t I, std::size_t... Is>
+    constexpr auto collect(const std::size_t& index) -> std::tuple<details::sequence_element_t<I, type_sequence>&, details::sequence_element_t<Is, type_sequence>&...> {
+        return std::tie((*(data<I>()+index)), (*(data<Is>()+index))...);
+    }
+
+    template<std::size_t I, std::size_t... Is>
+    constexpr auto collect(const std::size_t& index) const -> std::tuple<const details::sequence_element_t<I, type_sequence>&, const details::sequence_element_t<Is, type_sequence>&...> {
+        return std::tie((*(data<I>()+index)), (*(data<Is>()+index))...);
+    }
 
     /*
      * Iterators
@@ -217,6 +227,8 @@ public:
     constexpr iterator() = default;
     constexpr iterator(const iterator&) = default;
     constexpr iterator(iterator&&) = default;
+    constexpr iterator(vector_type& vector, const std::size_t& index)
+    :    _index(index), _vector(&vector) {}
 
     /*
      * Assignments
@@ -231,7 +243,7 @@ public:
      * Dereferencing
      */
     constexpr auto operator*() const -> reference {
-        return (*_vector)[_index];
+        return _vector->template collect<I, Is...>(_index);
     }
 
     /*
@@ -286,19 +298,22 @@ public:
     }
 
     constexpr auto operator[](const std::size_t& idx) const -> reference {
-        return (*_vector)[_index+idx];
+        return _vector->template collect<I, Is...>(_index+idx);
     }
 
     friend constexpr auto operator+(const difference_type diff, const iterator& it) {
         return it + diff;
     }
 
+    /*
+     * Select
+     */
+    template<std::size_t J, std::size_t... Js>
+    constexpr auto select() const {
+        return vector_type::iterator<J, Js...>(*_vector, _index);
+    }
+
 private:
-    constexpr iterator(vector_type& vector, const std::size_t& index)
-    :    _index(index), _vector(&vector) {}
-
-    friend vector_type;
-
     difference_type _index;
     mutable vector_type* _vector;
 };
