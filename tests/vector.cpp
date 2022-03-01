@@ -7,12 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include <limits>
-
-template<class... Ts>
-auto rand_tuple() {
-    return std::make_tuple(static_cast<Ts>(rand() % static_cast<int>(std::numeric_limits<Ts>::max()))...);
-}
+#include <rand.hpp>
 
 TEST(vector, empty) {
     multi::vector<bool, int, double> empty_v;
@@ -64,6 +59,30 @@ TEST(vector, push_back_and_element_access) {
         EXPECT_EQ(v[i], std_v[i]);
         EXPECT_EQ(const_v[i], std_v[i]);
     }
+}
+
+TEST(vector, copy_construct) {
+    constexpr std::size_t CAPACITY = 100;
+    multi::vector<bool, int, double> v;
+
+    for(int _ = 0; _ < CAPACITY ; ++_) {
+        auto val = rand_tuple<bool, int, double>();
+        v.push_back(val);
+    }
+
+    ASSERT_EQ(v.size(), CAPACITY);
+    ASSERT_GE(v.capacity(), CAPACITY);
+    ASSERT_TRUE(!v.empty());
+
+    multi::vector<bool, int, double> v_cp = v;
+
+    for(int i = 0; i < CAPACITY; i++) {
+        EXPECT_EQ(v[i], v_cp[i]);
+    }
+
+    EXPECT_NE(v.template data<0>(), v_cp.template data<0>());
+    EXPECT_NE(v.template data<1>(), v_cp.template data<1>());
+    EXPECT_NE(v.template data<2>(), v_cp.template data<2>());
 }
 
 TEST(vector, index_operator) {

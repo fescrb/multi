@@ -1,0 +1,76 @@
+//        Copyright Fernando Escribano Macias 2022
+// Distributed under the Boost Software License, Version 1.0.
+//    (See accompanying file LICENSE_1_0.txt or copy at
+//          https://www.boost.org/LICENSE_1_0.txt)
+
+#include <multi/select.hpp>
+
+#include <gtest/gtest.h>
+
+#include <rand.hpp>
+#include <multi/vector.hpp>
+
+TEST(select, vector_iterator) {
+    constexpr std::size_t CAPACITY = 100;
+    multi::vector<bool, int, double> v;
+
+    for(int _ = 0; _ < CAPACITY ; ++_) {
+        auto val = rand_tuple<bool, int, double>();
+        v.push_back(val);
+    }
+
+    ASSERT_EQ(v.size(), CAPACITY);
+    ASSERT_GE(v.capacity(), CAPACITY);
+    ASSERT_TRUE(!v.empty());
+
+    auto begin_via_iterator = v.begin().template select<0, 1>();
+    auto begin_via_select = multi::select<0, 1>(v.begin());
+    
+    auto end_via_iterator = v.end().template select<0, 1>();
+    auto end_via_select = multi::select<0, 1>(v.end());
+
+    EXPECT_EQ(begin_via_iterator, begin_via_select);
+    EXPECT_EQ(end_via_iterator, end_via_select);
+
+    auto it = begin_via_select;
+    auto it_std = begin_via_iterator;
+    
+    while(it != end_via_select) {
+        EXPECT_EQ(*it, *it_std);
+        ++it;
+        ++it_std;
+    }
+}
+
+/*TEST(select, vector_range) {
+    constexpr std::size_t CAPACITY = 100;
+    multi::vector<bool, int, double> v;
+    
+    for(int _ = 0; _ < CAPACITY ; ++_) {
+        auto val = rand_tuple<bool, int, double>();
+        v.push_back(val);
+    }
+
+    ASSERT_EQ(v.size(), CAPACITY);
+    ASSERT_GE(v.capacity(), CAPACITY);
+    ASSERT_TRUE(!v.empty());
+
+    auto v_r = multi::select<0, 1>(std::ranges::views::all_view(v));
+    auto begin_via_range = v_r.begin();
+    auto begin_via_select = multi::select<0, 1>(v.begin());
+    
+    auto end_via_range = v_r.end();
+    auto end_via_select = multi::select<0, 1>(v.end());
+
+    EXPECT_EQ(begin_via_range, begin_via_select);
+    EXPECT_EQ(end_via_range, end_via_select);
+
+    auto it = v_r.begin();
+    auto it_std = end_via_select;
+    
+    while(it != end_via_select) {
+        EXPECT_EQ(*it, *it_std);
+        ++it;
+        ++it_std;
+    }
+}*/

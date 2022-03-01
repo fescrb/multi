@@ -44,7 +44,7 @@ public:
         }
         _size = other._size;
         _capacity = other._capacity;
-        _data = _allocator.allocate_bytes(_capacity*packed_sizeof, max_alignof);
+        _data = static_cast<std::byte*>(_allocator.allocate_bytes(_capacity*packed_sizeof, max_alignof));
         std::memcpy(_data, other._data, _capacity*packed_sizeof);
     }
 
