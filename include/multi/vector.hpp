@@ -8,6 +8,7 @@
 #include <multi/details/type_sequence.hpp>
 
 #include <tuple>
+#include <iterator>
 #include <memory_resource>
 #include <cstring>
 #include <cassert>
@@ -120,6 +121,29 @@ public:
     } 
 
     /*
+     * Iterators
+     */
+    template<std::size_t I, std::size_t... Is>
+    class iterator;
+
+    template<std::size_t I, std::size_t... Is>
+    class const_iterator;
+
+    constexpr auto begin() {
+        return [this] <std::size_t I, std::size_t... Is>
+        (std::index_sequence<I, Is...>) {
+            return iterator<I,Is...>(*this, 0);
+        }(index_sequence{});
+    }
+
+    constexpr auto end() {
+        return [this] <std::size_t I, std::size_t... Is>
+        (std::index_sequence<I, Is...>) {
+            return iterator<I,Is...>(*this, _size);
+        }(index_sequence{});
+    }
+
+    /*
      * Modifiers
      */
     constexpr auto push_back(const value_type& value) -> void {
@@ -176,5 +200,108 @@ private:
         return capacity + (max_alignof - (capacity % max_alignof));
     }
 };
+
+template<class T, class... Ts>
+template<std::size_t I, std::size_t... Is>
+class vector<T, Ts...>::iterator final {
+public:
+    using vector_type = vector<T, Ts...>;
+    using value_type = std::tuple<details::sequence_element_t<I, vector_type::type_sequence>, details::sequence_element_t<Is, vector_type::type_sequence>...>;
+    using reference = std::tuple<details::sequence_element_t<I, vector_type::type_sequence>&, details::sequence_element_t<Is, vector_type::type_sequence>&...>;
+    using difference_type = std::ptrdiff_t;
+    using iterator_category = std::random_access_iterator_tag;
+
+    /*
+     * Constructors
+     */
+    constexpr iterator() = default;
+    constexpr iterator(const iterator&) = default;
+    constexpr iterator(iterator&&) = default;
+
+    /*
+     * Assignments
+     */ 
+    constexpr auto operator=(const iterator&) -> iterator& = default;
+    constexpr auto operator=(iterator&&) -> iterator& = default;
+
+    // Will compare vector pointer. Comparing iterators for different vectors undefined
+    constexpr auto operator<=>(const iterator&) const = default;
+
+    /*
+     * Dereferencing
+     */
+    constexpr auto operator*() const -> reference {
+        return (*_vector)[_index];
+    }
+
+    /*
+     * Increment
+     */
+    constexpr auto operator++() -> iterator& {
+        return operator+=(1);
+    }
+
+    constexpr auto operator++(int) -> iterator {
+        iterator ret = *this; 
+        operator+=(1);
+        return ret;
+    }
+
+    constexpr auto operator+=(const difference_type& diff) -> iterator& {
+        _index += diff; 
+        return *this;
+    }
+
+    constexpr auto operator+(const difference_type& diff) const -> iterator {
+        return iterator(*_vector, _index + diff);
+    }
+
+    /*
+     * Decrement
+     */
+    constexpr auto operator--() -> iterator& {
+        return operator-=(1);
+    }
+
+    constexpr auto operator--(int) -> iterator {
+        iterator ret = *this; 
+        operator-=(1);
+        return ret;
+    }
+
+    constexpr auto operator-=(const difference_type& diff) -> iterator& {
+        _index -= diff; 
+        return *this;
+    }
+
+    constexpr auto operator-(const difference_type& diff) const -> iterator {
+        return iterator(*_vector, _index - diff);
+    }
+
+    /*
+     * Difference
+     */
+    constexpr auto operator-(const iterator& rhs) const -> difference_type {
+        return _index - rhs._index;
+    }
+
+    constexpr auto operator[](const std::size_t& idx) const -> reference {
+        return (*_vector)[_index+idx];
+    }
+
+private:
+    constexpr iterator(vector_type& vector, const std::size_t& index)
+    :    _index(index), _vector(&vector) {}
+
+    friend vector_type;
+
+    difference_type _index;
+    mutable vector_type* _vector;
+};
+
+template<class T, class... Ts, std::size_t I, std::size_t... Is>
+constexpr auto operator+(const typename vector<T,Ts...>::iterator<I, Is...>::diference_type diff, const typename vector<T,Ts...>::iterator<I, Is...>& it) {
+    return it + diff;
+}
 
 } // namespace multi
