@@ -337,7 +337,7 @@ template<std::size_t I, std::size_t... Is>
 class vector<T, Ts...>::const_iterator final {
 public:
     using vector_type = vector<T, Ts...>;
-    using value_type = std::tuple<const details::sequence_element_t<I, vector_type::type_sequence>, const details::sequence_element_t<Is, vector_type::type_sequence>...>;
+    using value_type = std::tuple<const details::sequence_element_t<I, vector_type::type_sequence>&, const details::sequence_element_t<Is, vector_type::type_sequence>&...>;
     using reference = std::tuple<const details::sequence_element_t<I, vector_type::type_sequence>&, const details::sequence_element_t<Is, vector_type::type_sequence>&...>;
     using difference_type = std::ptrdiff_t;
     using iterator_category = std::random_access_iterator_tag;
@@ -375,7 +375,7 @@ public:
     }
 
     constexpr auto operator++(int) -> const_iterator {
-        iterator ret = *this; 
+        const_iterator ret = *this; 
         operator+=(1);
         return ret;
     }
