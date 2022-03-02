@@ -23,6 +23,7 @@ static void BM_multi_vector_tuple_select_iterate(benchmark::State& state) {
         for(auto it : v | multi::select<0>)
             std::get<0>(accum) += std::get<0>(it);
     }
+    benchmark::DoNotOptimize(accum);
 }
 
 BENCHMARK(BM_multi_vector_tuple_select_iterate)->Range(8, std::pow(8,6));

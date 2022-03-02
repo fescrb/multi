@@ -66,6 +66,7 @@ static void BM_std_vector_tuple_iterate(benchmark::State& state) {
         for(auto it : v)
             std::get<0>(accum) += std::get<0>(it);
     }
+    benchmark::DoNotOptimize(accum);
 }
 
 BENCHMARK(BM_std_vector_tuple_iterate)->Range(8, std::pow(8,6));
@@ -81,6 +82,7 @@ static void BM_multi_vector_tuple_iterate(benchmark::State& state) {
         for(auto it : v)
             std::get<0>(accum) += std::get<0>(it);
     }
+    benchmark::DoNotOptimize(accum);
 }
 
 BENCHMARK(BM_multi_vector_tuple_iterate)->Range(8, std::pow(8,6));
