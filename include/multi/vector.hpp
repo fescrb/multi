@@ -24,6 +24,14 @@ public:
     using type_sequence = details::type_sequence<T, Ts...>;
     using index_sequence = std::make_index_sequence<type_sequence::size()>;
     using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
+    template<std::size_t I, std::size_t... Is>
+    using collect_reference = std::tuple<details::sequence_element_t<I, type_sequence>&, details::sequence_element_t<Is, type_sequence>&...>;
+    template<std::size_t I, std::size_t... Is>
+    using collect_const_reference =std::tuple<const details::sequence_element_t<I, type_sequence>&, const details::sequence_element_t<Is, type_sequence>&...>;
+    template<std::size_t I>
+    using pointer = details::sequence_element_t<I, type_sequence>*;
+    template<std::size_t I>
+    using const_pointer = const details::sequence_element_t<I, type_sequence>*;
 
     constexpr vector(allocator_type allocator = {}) : _data(nullptr), _size(0), _capacity(0), _allocator(allocator) {}
 
@@ -91,12 +99,12 @@ public:
     } 
 
     template<std::size_t I>
-    inline auto data() -> details::sequence_element_t<I, type_sequence>* {
+    inline auto data() -> pointer<I> {
         return column<I>(_data, _capacity);
     }
 
     template<std::size_t I>
-    inline auto data() const -> const details::sequence_element_t<I, type_sequence>* {
+    inline auto data() const -> const_pointer<I> {
         return column<I>(_data, _capacity);
     }
 
@@ -125,12 +133,12 @@ public:
     }
 
     template<std::size_t I, std::size_t... Is>
-    constexpr auto collect(const std::size_t& index) -> std::tuple<details::sequence_element_t<I, type_sequence>&, details::sequence_element_t<Is, type_sequence>&...> {
+    constexpr auto collect(const std::size_t& index) -> collect_reference<I, Is...> {
         return std::tie((*(data<I>()+index)), (*(data<Is>()+index))...);
     }
 
     template<std::size_t I, std::size_t... Is>
-    constexpr auto collect(const std::size_t& index) const -> std::tuple<const details::sequence_element_t<I, type_sequence>&, const details::sequence_element_t<Is, type_sequence>&...> {
+    constexpr auto collect(const std::size_t& index) const -> collect_const_reference<I, Is...> {
         return std::tie((*(data<I>()+index)), (*(data<Is>()+index))...);
     }
 
