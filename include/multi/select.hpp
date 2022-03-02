@@ -20,19 +20,17 @@ concept selectable = requires (const T& t) {
 template<class T, std::size_t I, std::size_t... Is>
 using select_t = decltype(std::declval<T>().template select<I, Is...>());
 
-template<class R, std::size_t I, std::size_t... Is>
-    requires std::ranges::range<R> && selectable<std::ranges::iterator_t<R>, I, Is...>
-class select_view final : public std::ranges::view_interface<select_view<R, I, Is...>> {
+template<class V, std::size_t I, std::size_t... Is>
+    requires std::ranges::view<V> && selectable<std::ranges::iterator_t<V>, I, Is...>
+class select_view : public std::ranges::view_interface<select_view<V, I, Is...>> {
 public:
-    using iterator_type = select_t<std::ranges::iterator_t<R>, I, Is...>;
-    auto begin() const { return _begin; }
-    auto end() const { return _end; }
+    using iterator_type = select_t<std::ranges::iterator_t<V>, I, Is...>;
+    auto begin() const { return std::ranges::begin(_view).template select<I, Is...>(); }
+    auto end() const { return std::ranges::end(_view).template select<I, Is...>();; }
 
     
     constexpr select_view() = default;
-    constexpr select_view(R& range) 
-    :   _begin(std::ranges::begin(range).template select<I, Is...>()),
-        _end(std::ranges::end(range).template select<I, Is...>()) {}
+    constexpr select_view(V&& view) : _view(std::forward<V>(view)) {}
 
     constexpr select_view(const select_view&) = default;
     constexpr select_view(select_view&&) = default;
@@ -41,19 +39,27 @@ public:
     constexpr auto operator=(select_view&&) -> select_view& = default;
 
 private:
-    iterator_type _begin, _end;
+    V _view;
 };
+
+template<class R, std::size_t I, std::size_t... Is>
+select_view(R&& range) -> select_view<std::ranges::ref_view<R>, I, Is...>;
 
 template<std::size_t I, std::size_t... Is>
 struct select_fn final {
     template<class R>
-    auto operator()(R& range) const {
-        return select_view<R, I, Is...>(range);
+    auto operator()(R&& range) const {
+        return select_view<std::ranges::views::all_t<R>, I, Is...>(std::ranges::ref_view(std::forward<R>(range)));
+    }
+    template<class R>
+        requires std::ranges::view<R>
+    auto operator()(R&& range) const {
+        return select_view<R, I, Is...>(std::forward<R>(range));
     }
 
     template<class T>
         requires selectable<T, I, Is...>
-    auto operator()(const T& val) const {
+    auto operator()(T&& val) const {
         return val.template select<I, Is...>();
     }
 

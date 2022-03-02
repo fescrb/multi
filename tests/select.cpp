@@ -10,6 +10,7 @@
 #include <rand.hpp>
 #include <multi/vector.hpp>
 
+#include <iostream>
 
 TEST(select_view, vector_functionality) {
     constexpr std::size_t CAPACITY = 100;
@@ -24,7 +25,38 @@ TEST(select_view, vector_functionality) {
     ASSERT_GE(v.capacity(), CAPACITY);
     ASSERT_TRUE(!v.empty());
 
-    auto sel_view = multi::select_view<multi::vector<bool, int, double>,0, 1>(v);
+    auto sel_view = multi::select_view<std::ranges::ref_view<multi::vector<bool, int, double>>,0, 1>(std::ranges::ref_view(v));
+    auto begin_via_select = multi::select<0, 1>(v.begin());
+    auto end_via_select = multi::select<0, 1>(v.end());
+
+    EXPECT_EQ(sel_view.begin(), begin_via_select);
+    EXPECT_EQ(sel_view.end(), end_via_select);
+    EXPECT_EQ(sel_view.size(), v.size());
+    EXPECT_EQ(sel_view.empty(), v.empty());
+    EXPECT_EQ(sel_view.front(), *begin_via_select);
+    EXPECT_EQ(sel_view.back(), *(end_via_select-1));
+    
+    for(int i = 0; i < CAPACITY; i++) {
+        EXPECT_EQ(sel_view[i], *(begin_via_select+i));
+    }
+}
+
+
+TEST(select_view, const_vector_functionality) {
+    constexpr std::size_t CAPACITY = 100;
+    multi::vector<bool, int, double> v_mut;
+    const multi::vector<bool, int, double>& v = v_mut;
+    
+    for(int _ = 0; _ < CAPACITY ; ++_) {
+        auto val = rand_tuple<bool, int, double>();
+        v_mut.push_back(val);
+    }
+
+    ASSERT_EQ(v.size(), CAPACITY);
+    ASSERT_GE(v.capacity(), CAPACITY);
+    ASSERT_TRUE(!v.empty());
+
+    auto sel_view = multi::select_view<std::ranges::ref_view<const multi::vector<bool, int, double>>,0, 1>(v);
     auto begin_via_select = multi::select<0, 1>(v.begin());
     auto end_via_select = multi::select<0, 1>(v.end());
 
