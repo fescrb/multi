@@ -148,6 +148,32 @@ public:
     template<std::size_t I, std::size_t... Is>
     class iterator;
 
+    class iterator_base {
+    public:
+        using vector_type = vector<T, Ts...>;
+        using difference_type = std::ptrdiff_t;
+
+        constexpr iterator_base() = default;
+        constexpr iterator_base(const iterator_base&) = default;
+        constexpr iterator_base(iterator_base&&) = default;
+
+        constexpr auto operator<=>(const iterator_base& other) const -> std::strong_ordering {
+            return _index <=> other._index;
+        }
+        constexpr auto operator==(const iterator_base& other) const -> bool = default;
+        constexpr auto operator!=(const iterator_base& other) const -> bool = default;
+
+        constexpr auto operator=(const iterator_base&) -> iterator_base& = default;
+        constexpr auto operator=(iterator_base&&) -> iterator_base& = default;
+    
+    protected:
+        iterator_base(const difference_type index, vector_type* vector) 
+        : _index(index), _vector(vector) {}
+
+        difference_type _index;
+        mutable vector_type* _vector;
+    };
+
     template<std::size_t I, std::size_t... Is>
     class const_iterator;
 
@@ -239,13 +265,14 @@ private:
 
 template<class T, class... Ts>
 template<std::size_t I, std::size_t... Is>
-class vector<T, Ts...>::iterator final {
+class vector<T, Ts...>::iterator final : public vector<T, Ts...>::iterator_base {
 public:
     using vector_type = vector<T, Ts...>;
+    using difference_type = std::ptrdiff_t;
     using value_type = std::tuple<details::sequence_element_t<I, vector_type::type_sequence>, details::sequence_element_t<Is, vector_type::type_sequence>...>;
     using reference = std::tuple<details::sequence_element_t<I, vector_type::type_sequence>&, details::sequence_element_t<Is, vector_type::type_sequence>&...>;
-    using difference_type = std::ptrdiff_t;
     using iterator_category = std::random_access_iterator_tag;
+    using select_all_type = vector<T, Ts...>::iterator_base;
 
     /*
      * Constructors
@@ -254,22 +281,32 @@ public:
     constexpr iterator(const iterator&) = default;
     constexpr iterator(iterator&&) = default;
     constexpr iterator(vector_type& vector, const std::size_t& index)
-    :    _index(index), _vector(&vector) {}
+    :   iterator_base(index,&vector) {}
 
     /*
      * Assignments
      */ 
+    template<std::size_t J, std::size_t... Js>
+    constexpr auto operator=(const iterator<J, Js...>& other) -> iterator& {
+        iterator_base::_index = other._index;
+        iterator_base::_vector = other._vector;
+        return *this;
+    }
+    template<std::size_t J, std::size_t... Js>
+    constexpr auto operator=(iterator<J, Js...>&& other) -> iterator& {
+        iterator_base::_index = std::move(other._index);
+        iterator_base::_vector = std::move(other._vector);
+        return *this;
+    }
+
     constexpr auto operator=(const iterator&) -> iterator& = default;
     constexpr auto operator=(iterator&&) -> iterator& = default;
-
-    // Will compare vector pointer. Comparing iterators for different vectors undefined
-    constexpr auto operator<=>(const iterator&) const = default;
 
     /*
      * Dereferencing
      */
     constexpr auto operator*() const -> reference {
-        return _vector->template collect<I, Is...>(_index);
+        return iterator_base::_vector->template collect<I, Is...>(iterator_base::_index);
     }
 
     /*
@@ -286,12 +323,12 @@ public:
     }
 
     constexpr auto operator+=(const difference_type& diff) -> iterator& {
-        _index += diff; 
+        iterator_base::_index += diff; 
         return *this;
     }
 
     constexpr auto operator+(const difference_type& diff) const -> iterator {
-        return iterator(*_vector, _index + diff);
+        return iterator(*iterator_base::_vector, iterator_base::_index + diff);
     }
 
     /*
@@ -308,23 +345,23 @@ public:
     }
 
     constexpr auto operator-=(const difference_type& diff) -> iterator& {
-        _index -= diff; 
+        iterator_base::_index -= diff; 
         return *this;
     }
 
     constexpr auto operator-(const difference_type& diff) const -> iterator {
-        return iterator(*_vector, _index - diff);
+        return iterator(*iterator_base::_vector, iterator_base::_index - diff);
     }
 
     /*
      * Difference
      */
     constexpr auto operator-(const iterator& rhs) const -> difference_type {
-        return _index - rhs._index;
+        return iterator_base::_index - rhs._index;
     }
 
     constexpr auto operator[](const std::size_t& idx) const -> reference {
-        return _vector->template collect<I, Is...>(_index+idx);
+        return iterator_base::_vector->template collect<I, Is...>(iterator_base::_index+idx);
     }
 
     friend constexpr auto operator+(const difference_type diff, const iterator& it) {
@@ -336,12 +373,8 @@ public:
      */
     template<std::size_t J, std::size_t... Js>
     constexpr auto select() const {
-        return vector_type::iterator<J, Js...>(*_vector, _index);
+        return vector_type::iterator<J, Js...>(*iterator_base::_vector, iterator_base::_index);
     }
-
-private:
-    difference_type _index;
-    mutable vector_type* _vector;
 };
 
 template<class T, class... Ts>
@@ -371,6 +404,11 @@ public:
 
     // Will compare vector pointer. Comparing iterators for different vectors undefined
     constexpr auto operator<=>(const const_iterator&) const = default;
+
+    template<std::size_t J, std::size_t... Js>
+    constexpr auto operator<=>(const const_iterator<J, Js...>& other) const -> std::partial_ordering {
+        return _index <=> other._index;
+    }
 
     /*
      * Dereferencing
@@ -452,3 +490,14 @@ private:
 };
 
 } // namespace multi
+
+#include <multi/select.hpp>
+
+// Is this still needed?
+namespace std {
+    template<template<std:: size_t, std::size_t...> class T, std::size_t I, std::size_t... Is, template<std:: size_t, std::size_t...> class U, std::size_t J,  std::size_t... Js, template<class> class TQual, template<class> class UQual>
+        requires multi::selectable<T<I, Is...>, I, Is...> && multi::selectable<U<J, Js...>, J, Js...>
+    struct basic_common_reference<T<I, Is...>, U<J, Js...>, TQual, UQual> { 
+        using type = multi::select_all_t<T<I, Is...>>; // select_all_t is outdated, instead should refer to base class
+    };
+} // namespace std

@@ -17,6 +17,9 @@ concept selectable = requires (const T& t) {
     t.template select<I, Is...>();
 };
 
+template<class T>
+using select_all_t = typename T::select_all_type;
+
 template<class T, std::size_t I, std::size_t... Is>
 using select_t = decltype(std::declval<T>().template select<I, Is...>());
 

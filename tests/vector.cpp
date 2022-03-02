@@ -147,6 +147,17 @@ TEST(vector, at) {
 TEST(vector, range_constraints) {
     constexpr std::size_t CAPACITY = 100;
     static_assert(std::ranges::range<multi::vector<int>>);
+    static_assert(std::ranges::range<const multi::vector<int>>);
+    static_assert(
+        std::sentinel_for<
+            decltype(
+                std::declval<multi::vector<int>>().end()
+            ),
+            decltype(
+                std::declval<multi::vector<int>>().begin()
+            )
+        >
+    );
     multi::vector<bool, int, double> v;
     const multi::vector<bool, int, double>& const_v = v;
 
