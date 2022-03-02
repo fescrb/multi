@@ -23,6 +23,25 @@ jobs:
       - run:
           name: "Run tests"
           command: "tests/tests"
+  run-benchmarks:
+    docker:
+      - image: gcc:latest
+    steps:
+      - checkout
+      - run:
+          name: "Setup"
+          command: |
+            git submodule update --init --recursive
+            apt update -y 
+            apt install cmake -y
+      - run:
+          name: "Build"
+          command: |
+            cmake -DCMAKE_BUILD_TYPE=Release .
+            make
+      - run:
+          name: "Run benchmarks"
+          command: "microbench/microbench"
 
 
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
@@ -30,3 +49,4 @@ workflows:
   tests-workflow:
     jobs:
       - run-tests
+      - run-benchmarks
