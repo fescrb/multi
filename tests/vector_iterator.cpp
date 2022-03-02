@@ -23,7 +23,8 @@ TEST(vector_iterator, increment) {
 
     ASSERT_GE(v.size(), CAPACITY);
     ASSERT_GE(v.capacity(), CAPACITY);
-    ASSERT_TRUE(!v.empty());
+    ASSERT_FALSE(v.empty());
+    ASSERT_TRUE(v);
 
     auto it = v.begin();
     auto std_it = std_v.begin();
@@ -61,7 +62,8 @@ TEST(vector_iterator, assign) {
 
     ASSERT_GE(v.size(), CAPACITY);
     ASSERT_GE(v.capacity(), CAPACITY);
-    ASSERT_TRUE(!v.empty());
+    ASSERT_FALSE(v.empty());
+    ASSERT_TRUE(v);
 
     auto it = v.begin();
     auto std_it = std_v.begin();
@@ -91,7 +93,8 @@ TEST(vector_iterator, add) {
 
     ASSERT_GE(v.size(), CAPACITY);
     ASSERT_GE(v.capacity(), CAPACITY);
-    ASSERT_TRUE(!v.empty());
+    ASSERT_FALSE(v.empty());
+    ASSERT_TRUE(v);
 
     auto it = v.begin();
     auto std_it = std_v.begin();
@@ -142,7 +145,8 @@ TEST(vector_iterator, index_operator) {
 
     ASSERT_GE(v.size(), CAPACITY);
     ASSERT_GE(v.capacity(), CAPACITY);
-    ASSERT_TRUE(!v.empty());
+    ASSERT_FALSE(v.empty());
+    ASSERT_TRUE(v);
 
     std::ptrdiff_t start = rand() % (CAPACITY / 2);
 
@@ -166,7 +170,8 @@ TEST(vector_iterator, comparisons) {
 
     ASSERT_GE(v.size(), CAPACITY);
     ASSERT_GE(v.capacity(), CAPACITY);
-    ASSERT_TRUE(!v.empty());
+    ASSERT_FALSE(v.empty());
+    ASSERT_TRUE(v);
 
     EXPECT_LT(v.begin(), v.end());
     EXPECT_NE(v.begin(), v.end());
@@ -193,7 +198,8 @@ TEST(vector_iterator, difference) {
 
     ASSERT_GE(v.size(), CAPACITY);
     ASSERT_GE(v.capacity(), CAPACITY);
-    ASSERT_TRUE(!v.empty());
+    ASSERT_FALSE(v.empty());
+    ASSERT_TRUE(v);
 
     std::ptrdiff_t start = rand() % (CAPACITY / 2);
 
@@ -218,7 +224,8 @@ TEST(vector_iterator, decrement) {
 
     ASSERT_GE(v.size(), CAPACITY);
     ASSERT_GE(v.capacity(), CAPACITY);
-    ASSERT_TRUE(!v.empty());
+    ASSERT_FALSE(v.empty());
+    ASSERT_TRUE(v);
 
     auto it = v.end() - 1;
     auto std_it = std_v.end() -1;
@@ -257,7 +264,8 @@ TEST(vector_iterator, subtract) {
 
     ASSERT_GE(v.size(), CAPACITY);
     ASSERT_GE(v.capacity(), CAPACITY);
-    ASSERT_TRUE(!v.empty());
+    ASSERT_FALSE(v.empty());
+    ASSERT_TRUE(v);
 
     auto it = v.end() - 1;
     auto std_it = std_v.end() -1;
@@ -299,7 +307,8 @@ TEST(vector_iterator, select) {
 
     ASSERT_GE(v.size(), CAPACITY);
     ASSERT_GE(v.capacity(), CAPACITY);
-    ASSERT_TRUE(!v.empty());
+    ASSERT_FALSE(v.empty());
+    ASSERT_TRUE(v);
 
     auto it = v.begin().template select<0, 1>();
     auto std_it = std_v.begin();

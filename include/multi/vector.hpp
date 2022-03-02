@@ -67,6 +67,10 @@ public:
         return _allocator;
     }
 
+    constexpr operator bool() const noexcept {
+        return !empty();
+    }
+
     /*
      * Element access
      */
