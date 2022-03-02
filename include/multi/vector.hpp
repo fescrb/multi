@@ -139,17 +139,31 @@ public:
     template<std::size_t I, std::size_t... Is>
     class const_iterator;
 
-    constexpr auto begin() {
+    constexpr auto begin() noexcept {
         return [this] <std::size_t I, std::size_t... Is>
         (std::index_sequence<I, Is...>) {
             return iterator<I,Is...>(*this, 0);
         }(index_sequence{});
     }
 
-    constexpr auto end() {
+    constexpr auto end() noexcept {
         return [this] <std::size_t I, std::size_t... Is>
         (std::index_sequence<I, Is...>) {
             return iterator<I,Is...>(*this, _size);
+        }(index_sequence{});
+    }
+
+    constexpr auto begin() const noexcept {
+        return [this] <std::size_t I, std::size_t... Is>
+        (std::index_sequence<I, Is...>) {
+            return const_iterator<I,Is...>(*this, 0);
+        }(index_sequence{});
+    }
+
+    constexpr auto end() const noexcept {
+        return [this] <std::size_t I, std::size_t... Is>
+        (std::index_sequence<I, Is...>) {
+            return const_iterator<I,Is...>(*this, _size);
         }(index_sequence{});
     }
 
@@ -316,6 +330,113 @@ public:
 private:
     difference_type _index;
     mutable vector_type* _vector;
+};
+
+template<class T, class... Ts>
+template<std::size_t I, std::size_t... Is>
+class vector<T, Ts...>::const_iterator final {
+public:
+    using vector_type = vector<T, Ts...>;
+    using value_type = std::tuple<const details::sequence_element_t<I, vector_type::type_sequence>, const details::sequence_element_t<Is, vector_type::type_sequence>...>;
+    using reference = std::tuple<const details::sequence_element_t<I, vector_type::type_sequence>&, const details::sequence_element_t<Is, vector_type::type_sequence>&...>;
+    using difference_type = std::ptrdiff_t;
+    using iterator_category = std::random_access_iterator_tag;
+
+    /*
+     * Constructors
+     */
+    constexpr const_iterator() = default;
+    constexpr const_iterator(const const_iterator&) = default;
+    constexpr const_iterator(const_iterator&&) = default;
+    constexpr const_iterator(const vector_type& vector, const std::size_t& index)
+    :    _index(index), _vector(&vector) {}
+
+    /*
+     * Assignments
+     */ 
+    constexpr auto operator=(const const_iterator&) -> const_iterator& = default;
+    constexpr auto operator=(const_iterator&&) -> const_iterator& = default;
+
+    // Will compare vector pointer. Comparing iterators for different vectors undefined
+    constexpr auto operator<=>(const const_iterator&) const = default;
+
+    /*
+     * Dereferencing
+     */
+    constexpr auto operator*() const -> reference {
+        return _vector->template collect<I, Is...>(_index);
+    }
+
+    /*
+     * Increment
+     */
+    constexpr auto operator++() -> const_iterator& {
+        return operator+=(1);
+    }
+
+    constexpr auto operator++(int) -> const_iterator {
+        iterator ret = *this; 
+        operator+=(1);
+        return ret;
+    }
+
+    constexpr auto operator+=(const difference_type& diff) -> const_iterator& {
+        _index += diff; 
+        return *this;
+    }
+
+    constexpr auto operator+(const difference_type& diff) const -> const_iterator {
+        return const_iterator(*_vector, _index + diff);
+    }
+
+    /*
+     * Decrement
+     */
+    constexpr auto operator--() -> const_iterator& {
+        return operator-=(1);
+    }
+
+    constexpr auto operator--(int) -> const_iterator {
+        const_iterator ret = *this; 
+        operator-=(1);
+        return ret;
+    }
+
+    constexpr auto operator-=(const difference_type& diff) -> const_iterator& {
+        _index -= diff; 
+        return *this;
+    }
+
+    constexpr auto operator-(const difference_type& diff) const -> const_iterator {
+        return const_iterator(*_vector, _index - diff);
+    }
+
+    /*
+     * Difference
+     */
+    constexpr auto operator-(const const_iterator& rhs) const -> difference_type {
+        return _index - rhs._index;
+    }
+
+    constexpr auto operator[](const std::size_t& idx) const -> reference {
+        return _vector->template collect<I, Is...>(_index+idx);
+    }
+
+    friend constexpr auto operator+(const difference_type diff, const const_iterator& it) {
+        return it + diff;
+    }
+
+    /*
+     * Select
+     */
+    template<std::size_t J, std::size_t... Js>
+    constexpr auto select() const {
+        return vector_type::const_iterator<J, Js...>(*_vector, _index);
+    }
+
+private:
+    difference_type _index;
+    const vector_type* _vector;
 };
 
 } // namespace multi

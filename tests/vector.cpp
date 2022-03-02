@@ -142,6 +142,8 @@ TEST(vector, range_constraints) {
     constexpr std::size_t CAPACITY = 100;
     static_assert(std::ranges::range<multi::vector<int>>);
     multi::vector<bool, int, double> v;
+    const multi::vector<bool, int, double>& const_v = v;
+
     for(int _ = 0; _ < CAPACITY ; ++_) {
         auto val = rand_tuple<bool, int, double>();
         v.push_back(val);
@@ -150,9 +152,11 @@ TEST(vector, range_constraints) {
     ASSERT_GE(v.size(), CAPACITY);
     ASSERT_GE(v.capacity(), CAPACITY);
     ASSERT_TRUE(!v.empty());
-    
+
     EXPECT_EQ(std::ranges::begin(v), v.begin());
     EXPECT_EQ(std::ranges::end(v), v.end());
+    EXPECT_EQ(std::ranges::begin(const_v), const_v.begin());
+    EXPECT_EQ(std::ranges::end(const_v), const_v.end());
 }
 
 TEST(vector_iterator, increment) {
