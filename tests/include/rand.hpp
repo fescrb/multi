@@ -8,6 +8,7 @@
 #include <limits>
 #include <type_traits>
 #include <vector>
+#include <ranges>
 
 template<class T>
 auto typed_rand() {
@@ -27,10 +28,11 @@ auto rand_tuple() {
 }
  
 template<class T>
-auto rand_buffer(const std::size_t size) -> std::vector<T>{
-    std::vector<T> rand_v = std::vector<T>(size);
-    for(auto v : rand_v) {
-        v = typed_rand<T>();
+auto rand_buffer(const std::size_t size) -> std::vector<T> {
+    std::vector<T> rand_v;
+    rand_v.reserve(size);
+    for(auto _ : std::views::iota(0u, size)) {
+        rand_v.push_back(typed_rand<T>());
     }
     return rand_v;
 }

@@ -43,7 +43,8 @@ TEST(buffer, resize) {
     constexpr std::size_t CAPACITY = 100;
     using buffer_type = multi::buffer<bool, int, double>;
 
-    buffer_type buff = buffer_type(buffer_type(), CAPACITY);
+    buffer_type buff;
+    buff.resize(CAPACITY);
     const buffer_type& b_const = buff;
 
     EXPECT_NE(buff.data, nullptr);
@@ -63,7 +64,9 @@ TEST(buffer, column_access) {
     constexpr std::size_t CAPACITY = 100;
     using buffer_type = multi::buffer<bool, int, double>;
 
-    buffer_type buff = buffer_type(buffer_type(), CAPACITY);
+    buffer_type buff;
+    buff.resize(CAPACITY);
+
     const buffer_type& b_const = buff;
 
     auto bools = rand_buffer<bool>(CAPACITY);
@@ -90,7 +93,8 @@ TEST(buffer, full_copy) {
     constexpr std::size_t CAPACITY = 100;
     using buffer_type = multi::buffer<bool, int, double>;
 
-    buffer_type buff = buffer_type(buffer_type(), CAPACITY);
+    buffer_type buff;
+    buff.resize(CAPACITY);
 
     auto bools = rand_buffer<bool>(CAPACITY);
     auto ints = rand_buffer<int>(CAPACITY);
@@ -115,13 +119,30 @@ TEST(buffer, full_copy) {
 
     EXPECT_EQ(buff.size, b_copy.size);
     EXPECT_EQ(buff.capacity, b_copy.capacity);
+
+    buffer_type b_copy_by_assign;
+    b_copy_by_assign = buff;
+    
+    for(std::size_t i = 0; i < CAPACITY; i++) {
+        ASSERT_EQ(buff.template column<0>()[i], bools[i]) << "index: " << i;
+        ASSERT_EQ(buff.template column<1>()[i], ints[i]) << "index: " << i;
+        ASSERT_FLOAT_EQ(buff.template column<2>()[i], doubles[i]) << "index: " << i;
+        ASSERT_EQ(b_copy_by_assign.template column<0>()[i], bools[i]) << "index: " << i;
+        ASSERT_EQ(b_copy_by_assign.template column<1>()[i], ints[i]) << "index: " << i;
+        ASSERT_FLOAT_EQ(b_copy_by_assign.template column<2>()[i], doubles[i]) << "index: " << i;
+    }
+
+    EXPECT_EQ(buff.size, b_copy_by_assign.size);
+    EXPECT_EQ(buff.capacity, b_copy_by_assign.capacity);
 }
 
 TEST(buffer, expand) {
     constexpr std::size_t CAPACITY = 100;
+    constexpr std::size_t GROW_FACTOR = 2;
     using buffer_type = multi::buffer<bool, int, double>;
 
-    buffer_type buff = buffer_type(buffer_type(), CAPACITY);
+    buffer_type buff;
+    buff.resize(CAPACITY);
 
     auto bools = rand_buffer<bool>(CAPACITY);
     auto ints = rand_buffer<int>(CAPACITY);
@@ -133,20 +154,14 @@ TEST(buffer, expand) {
         buff.template column<2>()[i] = doubles[i];
     }
     
-    buffer_type b_copy = buffer_type(buff, CAPACITY*2);
+    buff.resize(CAPACITY*GROW_FACTOR);
 
-    ASSERT_EQ(b_copy.capacity % buffer_type::alignment, 0);
+    ASSERT_EQ(buff.capacity % buffer_type::alignment, 0);
+    ASSERT_GE(buff.capacity, CAPACITY*GROW_FACTOR);
 
     for(std::size_t i = 0; i < CAPACITY; i++) {
         ASSERT_EQ(buff.template column<0>()[i], bools[i]) << "index: " << i;
         ASSERT_EQ(buff.template column<1>()[i], ints[i]) << "index: " << i;
         ASSERT_FLOAT_EQ(buff.template column<2>()[i], doubles[i]) << "index: " << i;
-        ASSERT_EQ(b_copy.template column<0>()[i], bools[i]) << "index: " << i;
-        ASSERT_EQ(b_copy.template column<1>()[i], ints[i]) << "index: " << i;
-        ASSERT_FLOAT_EQ(b_copy.template column<2>()[i], doubles[i]) << "index: " << i;
     }
-
-    EXPECT_EQ(buff.size, b_copy.size);
-    EXPECT_NE(buff.capacity, b_copy.capacity);
-    EXPECT_GE(b_copy.capacity, CAPACITY*2);
 }

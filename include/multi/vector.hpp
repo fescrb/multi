@@ -8,6 +8,8 @@
 #include <multi/details/type_sequence.hpp>
 #include <multi/details/index.hpp>
 
+#include <multi/buffer.hpp>
+
 #include <tuple>
 #include <iterator>
 #include <memory_resource>
@@ -22,9 +24,10 @@ public:
     using value_type = std::tuple<T, Ts...>;
     using reference = std::tuple<T&, Ts&...>;
     using const_reference = std::tuple<const T&, const Ts&...>;
-    using type_sequence = details::type_sequence<T, Ts...>;
-    using index_sequence = std::make_index_sequence<type_sequence::size()>;
-    using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
+    using buffer_type = buffer<T, Ts...>;
+    using type_sequence = typename buffer<T, Ts...>::type_sequence;
+    using index_sequence = typename buffer<T, Ts...>::index_sequence;
+    using allocator_type = typename buffer<T, Ts...>::allocator_type;
     template<std::size_t I, std::size_t... Is>
     using collect_reference = std::tuple<details::sequence_element_t<I, type_sequence>&, details::sequence_element_t<Is, type_sequence>&...>;
     template<std::size_t I, std::size_t... Is>
@@ -34,34 +37,22 @@ public:
     template<std::size_t I>
     using const_pointer = const details::sequence_element_t<I, type_sequence>*;
 
-    constexpr vector(allocator_type allocator = {}) : _data(nullptr), _size(0), _capacity(0), _allocator(allocator) {}
+    constexpr vector(allocator_type allocator = {}) : _buffer(allocator) {}
 
     constexpr vector(const vector& other)
-    :   _data(nullptr), _size(0), _capacity(0), _allocator(other._allocator) {
+    :   _buffer(other._buffer) {
         operator=(other);
     }
 
-    constexpr ~vector() {
-        if (_data) {
-            _allocator.deallocate_bytes(_data, _capacity*packed_sizeof, max_alignof);
-        }
-    }
+    constexpr ~vector() {}
 
-    constexpr auto operator=(const vector& other) {
-        if (_data) {
-            _allocator.deallocate_bytes(_data, _capacity*packed_sizeof, max_alignof);
-        }
-        _size = other._size;
-        _capacity = other._capacity;
-        _data = static_cast<std::byte*>(_allocator.allocate_bytes(_capacity*packed_sizeof, max_alignof));
-        std::memcpy(_data, other._data, _capacity*packed_sizeof);
-    }
+    constexpr auto operator=(const vector&) -> vector& = default;
 
     /*
      * Member access
      */
     constexpr auto size() const noexcept -> std::size_t {
-        return _size;
+        return _buffer.size;
     }
 
     constexpr auto empty() const noexcept -> bool {
@@ -69,11 +60,11 @@ public:
     }
 
     constexpr auto capacity() const noexcept -> std::size_t {
-        return _capacity;
+        return _buffer.capacity;
     }
 
     constexpr auto get_allocator() const noexcept -> allocator_type {
-        return _allocator;
+        return _buffer.allocator;
     }
 
     constexpr operator bool() const noexcept {
@@ -92,21 +83,21 @@ public:
     }
 
     constexpr auto back() -> reference {
-        return operator[](_size-1);
+        return operator[](_buffer.size-1);
     } 
 
     constexpr auto back() const -> const_reference {
-        return operator[](_size-1);
+        return operator[](_buffer.size-1);
     } 
 
     template<std::size_t I>
     inline auto data() -> pointer<I> {
-        return column<I>(_data, _capacity);
+        return _buffer.template column<I>();
     }
 
     template<std::size_t I>
     inline auto data() const -> const_pointer<I> {
-        return column<I>(_data, _capacity);
+        return _buffer.template column<I>();
     }
 
     inline auto operator[](const std::size_t& index) -> reference {
@@ -124,23 +115,23 @@ public:
     }
 
     constexpr auto at(const std::size_t& index) -> reference {
-        assert(index < _size);
+        assert(index < _buffer.size);
         return operator[](index);
     } 
 
     constexpr auto at(const std::size_t& index) const -> const_reference {
-        assert(index < _size);
+        assert(index < _buffer.size);
         return operator[](index);
     }
 
     template<std::size_t I, std::size_t... Is>
     constexpr auto collect(const std::size_t& index) -> collect_reference<I, Is...> {
-        return std::tie((*(data<I>()+index)), (*(data<Is>()+index))...);
+        return std::tie((*(_buffer.template column<I>()+index)), (*(_buffer.template column<Is>()+index))...);
     }
 
     template<std::size_t I, std::size_t... Is>
     constexpr auto collect(const std::size_t& index) const -> collect_const_reference<I, Is...> {
-        return std::tie((*(data<I>()+index)), (*(data<Is>()+index))...);
+        return std::tie((*(_buffer.template column<I>()+index)), (*(_buffer.template column<Is>()+index))...);
     }
 
     /*
@@ -162,7 +153,7 @@ public:
     constexpr auto end() noexcept {
         return [this] <std::size_t I, std::size_t... Is>
         (std::index_sequence<I, Is...>) {
-            return iterator<I,Is...>(this, _size);
+            return iterator<I,Is...>(this, _buffer.size);
         }(index_sequence{});
     }
 
@@ -176,7 +167,7 @@ public:
     constexpr auto end() const noexcept {
         return [this] <std::size_t I, std::size_t... Is>
         (std::index_sequence<I, Is...>) {
-            return const_iterator<I,Is...>(this, _size);
+            return const_iterator<I,Is...>(this, _buffer.size);
         }(index_sequence{});
     }
 
@@ -184,58 +175,20 @@ public:
      * Modifiers
      */
     constexpr auto push_back(const value_type& value) -> void {
-        if(_size + 1 > _capacity) {
-            reserve(std::max(_capacity, 1ul) * 2ul);
+        if(_buffer.size + 1 > _buffer.capacity) {
+            reserve(std::max(_buffer.capacity, 1ul) * 2ul);
         }
-        operator[](_size) = value;
-        _size++;
+        operator[](_buffer.size) = value;
+        _buffer.size++;
     }
 
     constexpr auto reserve(const std::size_t& capacity) -> void {
-        std::size_t new_capacity = round_capacity(capacity);
-        std::byte* new_data = static_cast<std::byte*>(_allocator.allocate_bytes(new_capacity*packed_sizeof, max_alignof));
-        if (_data) {
-            [this] <std::size_t... Is>
-            (std::byte* new_data, const std::size_t& new_capacity, std::index_sequence<Is...>) {
-                return std::min({move_column<Is>(new_data, new_capacity, _data, _capacity, _size)...,});
-            }(new_data, new_capacity, index_sequence{});
-        }
-        _allocator.deallocate_bytes(_data, _capacity*packed_sizeof, max_alignof);
-        _data = new_data;
-        _capacity = new_capacity;
+        if(capacity > _buffer.capacity);
+            _buffer.resize(capacity);
     }
 
 private:
-    constexpr static std::size_t packed_sizeof = details::packed_sizeof<type_sequence>;
-    constexpr static std::size_t max_alignof = details::max_alignof<type_sequence>;
-
-    std::byte* _data;
-    std::size_t _size;
-    std::size_t _capacity;
-    allocator_type _allocator;
-
-    template<std::size_t I>
-    constexpr static auto column(const std::byte* data, const std::size_t& capacity) -> const details::sequence_element_t<I, type_sequence>* {
-        return reinterpret_cast<const details::sequence_element_t<I, type_sequence>*>(data + capacity * details::packed_sizeof<details::take_subsequence_t<I, type_sequence>>);
-    }
-
-    template<std::size_t I>
-    constexpr static auto column(std::byte* data, const std::size_t& capacity) -> details::sequence_element_t<I, type_sequence>* {
-        return reinterpret_cast<details::sequence_element_t<I, type_sequence>*>(data + capacity * details::packed_sizeof<details::take_subsequence_t<I, type_sequence>>);
-    }
-
-    template<std::size_t I>
-    constexpr static auto move_column(std::byte* dst, const std::size_t& dst_capacity, const std::byte* src, const std::size_t& src_capacity, const std::size_t& size) -> std::byte* {
-        return reinterpret_cast<std::byte*>(std::memcpy(
-            column<I>(dst, dst_capacity),
-            column<I>(src, src_capacity), 
-            size*sizeof(details::sequence_element_t<I, type_sequence>)
-        ));
-    }
-
-    constexpr static auto round_capacity(const std::size_t& capacity) -> std::size_t {
-        return capacity + (max_alignof - (capacity % max_alignof));
-    }
+    buffer_type _buffer;
 };
 
 template<class T, class... Ts>
