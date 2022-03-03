@@ -8,6 +8,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 list(APPEND sources ${CMAKE_CURRENT_SOURCE_DIR}/details/max_alignof.cpp
                     ${CMAKE_CURRENT_SOURCE_DIR}/details/packed_sizeof.cpp
                     ${CMAKE_CURRENT_SOURCE_DIR}/details/type_sequence.cpp
+                    ${CMAKE_CURRENT_SOURCE_DIR}/buffer.cpp
                     ${CMAKE_CURRENT_SOURCE_DIR}/vector.cpp
                     ${CMAKE_CURRENT_SOURCE_DIR}/vector_iterator.cpp
                     ${CMAKE_CURRENT_SOURCE_DIR}/vector_const_iterator.cpp
