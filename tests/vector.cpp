@@ -147,6 +147,17 @@ TEST(vector, at) {
 TEST(vector, range_constraints) {
     constexpr std::size_t CAPACITY = 100;
     static_assert(std::ranges::range<multi::vector<int>>);
+    static_assert(std::ranges::range<const multi::vector<int>>);
+    static_assert(
+        std::sentinel_for<
+            decltype(
+                std::declval<multi::vector<int>>().end()
+            ),
+            decltype(
+                std::declval<multi::vector<int>>().begin()
+            )
+        >
+    );
     multi::vector<bool, int, double> v;
     const multi::vector<bool, int, double>& const_v = v;
 
@@ -164,4 +175,36 @@ TEST(vector, range_constraints) {
     EXPECT_EQ(std::ranges::end(v), v.end());
     EXPECT_EQ(std::ranges::begin(const_v), const_v.begin());
     EXPECT_EQ(std::ranges::end(const_v), const_v.end());
+}
+
+TEST(vector, iterator_equivalence) {
+    constexpr std::size_t CAPACITY = 100;
+    multi::vector<bool, int, double> v;
+    const multi::vector<bool, int, double>& const_v = v;
+
+    for(int _ = 0; _ < CAPACITY ; ++_) {
+        auto val = rand_tuple<bool, int, double>();
+        v.push_back(val);
+    }
+
+    ASSERT_GE(v.size(), CAPACITY);
+    ASSERT_GE(v.capacity(), CAPACITY);
+    ASSERT_FALSE(v.empty());
+    ASSERT_TRUE(v);
+
+    auto it = v.begin();
+    auto it_const = const_v.begin();
+    EXPECT_EQ(it, it_const);
+    EXPECT_GE(it, it_const);
+    EXPECT_LE(it, it_const);
+    EXPECT_GT(it+1, it_const);
+    EXPECT_GE(it+1, it_const);
+    EXPECT_NE(it+1, it_const);
+    EXPECT_LT(it-1, it_const);
+    EXPECT_LE(it-1, it_const);
+    EXPECT_NE(it-1, it_const);
+
+    static_assert(std::three_way_comparable_with<
+        multi::vector<bool, int>::iterator<0, 1>, 
+        multi::vector<bool, int>::const_iterator<0,1>>);
 }

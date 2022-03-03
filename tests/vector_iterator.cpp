@@ -10,6 +10,8 @@
 #include <rand.hpp>
 #include <multi/select.hpp>
 
+#include <ostream>
+
 TEST(vector_iterator, increment) {
     constexpr std::size_t CAPACITY = 100;
     multi::vector<bool, int, double> v;
@@ -321,8 +323,27 @@ TEST(vector_iterator, select) {
     }
 }
 
+TEST(vector_iterator, select_comparison) {
+    multi::vector<bool, int, double> v;
+    auto it = v.begin();
+    auto it_select = it.template select<0, 1>();
+    EXPECT_EQ(it, it_select);
+    EXPECT_GE(it, it_select);
+    EXPECT_LE(it, it_select);
+    EXPECT_GT(it+1, it_select);
+    EXPECT_GE(it+1, it_select);
+    EXPECT_NE(it+1, it_select);
+    EXPECT_LT(it-1, it_select);
+    EXPECT_LE(it-1, it_select);
+    EXPECT_NE(it-1, it_select);
+}
+
 TEST(vector_iterator, constraint_passing) {
     static_assert(std::random_access_iterator<multi::vector<int>::iterator<0>>);
     static_assert(multi::selectable<multi::vector<int>::iterator<0>, 0>);
     static_assert(multi::selectable<multi::vector<bool, int>::iterator<0, 1>, 0>);
+    static_assert(std::three_way_comparable<multi::vector<bool, int>::iterator<0, 1>>);
+    static_assert(std::three_way_comparable_with<
+        multi::vector<bool, int>::iterator<0, 1>,
+        multi::vector<bool, int>::iterator<0>>);
 }
