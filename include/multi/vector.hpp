@@ -25,6 +25,7 @@ public:
     using reference = std::tuple<T&, Ts&...>;
     using const_reference = std::tuple<const T&, const Ts&...>;
     using buffer_type = buffer<T, Ts...>;
+    using size_type = buffer_type::size_type;
     using type_sequence = typename buffer<T, Ts...>::type_sequence;
     using index_sequence = typename buffer<T, Ts...>::index_sequence;
     using allocator_type = typename buffer<T, Ts...>::allocator_type;
@@ -37,12 +38,10 @@ public:
     template<std::size_t I>
     using const_pointer = const details::sequence_element_t<I, type_sequence>*;
 
-    constexpr vector(allocator_type allocator = {}) : _buffer(allocator) {}
+    constexpr vector(allocator_type allocator = {}) : _buffer(allocator), _size(0) {}
 
     constexpr vector(const vector& other)
-    :   _buffer(other._buffer) {
-        operator=(other);
-    }
+    :   _buffer(other._buffer), _size(other._size) {}
 
     constexpr ~vector() {}
 
@@ -52,7 +51,7 @@ public:
      * Member access
      */
     constexpr auto size() const noexcept -> std::size_t {
-        return _buffer.size;
+        return _size;
     }
 
     constexpr auto empty() const noexcept -> bool {
@@ -64,7 +63,7 @@ public:
     }
 
     constexpr auto get_allocator() const noexcept -> allocator_type {
-        return _buffer.allocator;
+        return _buffer.get_allocator();
     }
 
     constexpr operator bool() const noexcept {
@@ -83,11 +82,11 @@ public:
     }
 
     constexpr auto back() -> reference {
-        return operator[](_buffer.size-1);
+        return operator[](_size-1);
     } 
 
     constexpr auto back() const -> const_reference {
-        return operator[](_buffer.size-1);
+        return operator[](_size-1);
     } 
 
     template<std::size_t I>
@@ -115,12 +114,12 @@ public:
     }
 
     constexpr auto at(const std::size_t& index) -> reference {
-        assert(index < _buffer.size);
+        assert(index < _size);
         return operator[](index);
     } 
 
     constexpr auto at(const std::size_t& index) const -> const_reference {
-        assert(index < _buffer.size);
+        assert(index < _size);
         return operator[](index);
     }
 
@@ -153,7 +152,7 @@ public:
     constexpr auto end() noexcept {
         return [this] <std::size_t I, std::size_t... Is>
         (std::index_sequence<I, Is...>) {
-            return iterator<I,Is...>(this, _buffer.size);
+            return iterator<I,Is...>(this, _size);
         }(index_sequence{});
     }
 
@@ -167,7 +166,7 @@ public:
     constexpr auto end() const noexcept {
         return [this] <std::size_t I, std::size_t... Is>
         (std::index_sequence<I, Is...>) {
-            return const_iterator<I,Is...>(this, _buffer.size);
+            return const_iterator<I,Is...>(this, _size);
         }(index_sequence{});
     }
 
@@ -175,11 +174,11 @@ public:
      * Modifiers
      */
     constexpr auto push_back(const value_type& value) -> void {
-        if(_buffer.size + 1 > _buffer.capacity) {
+        if(_size + 1 > _buffer.capacity) {
             reserve(std::max(_buffer.capacity, 1ul) * 2ul);
         }
-        operator[](_buffer.size) = value;
-        _buffer.size++;
+        operator[](_size) = value;
+        ++_size;
     }
 
     constexpr auto reserve(const std::size_t& capacity) -> void {
@@ -189,6 +188,7 @@ public:
 
 private:
     buffer_type _buffer;
+    size_type _size;
 };
 
 template<class T, class... Ts>

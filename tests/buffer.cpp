@@ -27,7 +27,6 @@ TEST(buffer, empty) {
     const multi::buffer<bool, int, double>& b_const = buff;
 
     EXPECT_EQ(buff.data, nullptr);
-    EXPECT_EQ(buff.size, 0);
     EXPECT_EQ(buff.capacity, 0);
 
     EXPECT_EQ(buff.template column<0>(), nullptr);
@@ -48,7 +47,6 @@ TEST(buffer, resize) {
     const buffer_type& b_const = buff;
 
     EXPECT_NE(buff.data, nullptr);
-    EXPECT_EQ(buff.size, 0);
     EXPECT_GE(buff.capacity, CAPACITY);
 
     EXPECT_NE(buff.template column<0>(), nullptr);
@@ -58,6 +56,14 @@ TEST(buffer, resize) {
     EXPECT_NE(b_const.template column<0>(), nullptr);
     EXPECT_NE(b_const.template column<1>(), nullptr);
     EXPECT_NE(b_const.template column<2>(), nullptr);
+
+    EXPECT_EQ(b_const.template column<0>(), buff.template column<0>());
+    EXPECT_EQ(b_const.template column<1>(), buff.template column<1>());
+    EXPECT_EQ(b_const.template column<2>(), buff.template column<2>());
+
+    EXPECT_EQ(buff.template column<0>(), reinterpret_cast<bool*>(buff.data));
+    EXPECT_EQ(buff.template column<1>(), reinterpret_cast<int*>(buff.data + (CAPACITY * sizeof(bool))));
+    EXPECT_EQ(buff.template column<2>(), reinterpret_cast<double*>(buff.data + (CAPACITY * (sizeof(bool)+sizeof(int)))));
 }
 
 TEST(buffer, column_access) {
@@ -111,13 +117,12 @@ TEST(buffer, full_copy) {
     for(std::size_t i = 0; i < CAPACITY; i++) {
         ASSERT_EQ(buff.template column<0>()[i], bools[i]) << "index: " << i;
         ASSERT_EQ(buff.template column<1>()[i], ints[i]) << "index: " << i;
-        ASSERT_FLOAT_EQ(buff.template column<2>()[i], doubles[i]) << "index: " << i;
+        ASSERT_EQ(buff.template column<2>()[i], doubles[i]) << "index: " << i;
         ASSERT_EQ(b_copy.template column<0>()[i], bools[i]) << "index: " << i;
         ASSERT_EQ(b_copy.template column<1>()[i], ints[i]) << "index: " << i;
-        ASSERT_FLOAT_EQ(b_copy.template column<2>()[i], doubles[i]) << "index: " << i;
+        ASSERT_EQ(b_copy.template column<2>()[i], doubles[i]) << "index: " << i;
     }
 
-    EXPECT_EQ(buff.size, b_copy.size);
     EXPECT_EQ(buff.capacity, b_copy.capacity);
 
     buffer_type b_copy_by_assign;
@@ -132,7 +137,6 @@ TEST(buffer, full_copy) {
         ASSERT_FLOAT_EQ(b_copy_by_assign.template column<2>()[i], doubles[i]) << "index: " << i;
     }
 
-    EXPECT_EQ(buff.size, b_copy_by_assign.size);
     EXPECT_EQ(buff.capacity, b_copy_by_assign.capacity);
 }
 

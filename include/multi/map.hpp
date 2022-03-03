@@ -8,6 +8,8 @@
 #include <utility>
 #include <tuple>
 
+#include <multi/buffer.hpp>
+
 namespace multi {
 
 template<class Key, class T, class... Ts>
@@ -16,7 +18,7 @@ class map {
     using vector_type = vector<T, Ts...>;
 public:
     using value_type = std::pair<const Key, vector_type::value_type>;
-    using reference = std::pait<const Key, vector_type::reference>;
+    using reference = std::pair<const Key, vector_type::reference>;
     using const_reference = std::tuple<const T&, const Ts&...>;
 
 };

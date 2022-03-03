@@ -9,6 +9,8 @@
 #include <memory_resource>
 #include <cstring>
 
+#include <iostream>
+
 namespace multi {
 
 template<class T, class... Ts>
@@ -30,13 +32,13 @@ struct buffer {
         return capacity + (capacity % alignment ? (alignment - (capacity % alignment)) : 0);
     }
 
-    constexpr buffer(allocator_type allocator = {}) : data(nullptr), capacity(0), size(0), allocator(allocator) {}
+    constexpr buffer(allocator_type allocator = {}) : data(nullptr), capacity(0), _allocator(allocator) {}
 
     constexpr buffer(const buffer& other) 
-    :   buffer(other, other.allocator) {}
+    :   buffer(other, other._allocator) {}
 
-    constexpr buffer(const buffer& other, allocator_type allocator)
-    :   buffer(allocator) {
+    constexpr buffer(const buffer& other, allocator_type _allocator)
+    :   buffer(_allocator) {
         operator=(other);
     }
 
@@ -44,42 +46,37 @@ struct buffer {
         if (this != &other) {
             clear();
             capacity = other.capacity;
-            size = other.size;
-            if (capacity) 
+            if (capacity) {
                 data = static_cast<std::byte*>(
-                    allocator.allocate_bytes(capacity*member_sizeof, alignment)
+                    _allocator.allocate_bytes(capacity*member_sizeof, alignment)
                 );
-            if (size)
-                std::memcpy(data, other.data, member_sizeof*size);
-
+                std::memcpy(data, other.data, member_sizeof*capacity);
+            }
         }
         return *this;
     }
 
-    constexpr auto resize(const size_type new_capacity) -> void{
+    auto resize(const size_type new_capacity) -> void{
         if (new_capacity) {
-            size_type new_size = std::min(size, new_capacity);
             std::byte* new_data = static_cast<std::byte*>(
-                allocator.allocate_bytes(capacity*member_sizeof, alignment)
+                _allocator.allocate_bytes(new_capacity*member_sizeof, alignment)
             );
             if (data) {
                 [this] <std::size_t... Is> 
-                (std::byte* new_data, const size_type new_capacity, const size_type new_size, std::index_sequence<Is...>) {
-                    return std::min({copy_column<Is>(new_data, new_capacity, data, capacity, new_size)...,});
-                }(new_data, new_capacity, new_size, index_sequence{});
+                (std::byte* new_data, const size_type new_capacity, std::index_sequence<Is...>) {
+                    return std::min({copy_column<Is>(new_data, new_capacity, data, capacity)...,});
+                }(new_data, new_capacity, index_sequence{});
                 clear();
             }
             data = new_data;
             capacity = new_capacity;
-            size = new_size;
         }
     }
 
     constexpr auto clear() -> void {
         if (data)
-            allocator.deallocate_bytes(data, capacity*member_sizeof, alignment);
+            _allocator.deallocate_bytes(data, capacity*member_sizeof, alignment);
         data = nullptr;
-        size = 0;
         capacity = 0;
     }
 
@@ -99,28 +96,34 @@ struct buffer {
         return column<I>(data, capacity);
     }
 
+    constexpr auto get_allocator() const -> allocator_type {
+        return _allocator;
+    }
+
     std::byte* data;
     size_type capacity;
-    size_type size;
-    allocator_type allocator;
 
 private:
+    allocator_type _allocator;
+    
     template<std::size_t I>
     constexpr static auto column(const std::byte* data, const std::size_t& capacity) -> const details::sequence_element_t<I, type_sequence>* {
-        return reinterpret_cast<const details::sequence_element_t<I, type_sequence>*>(data + (capacity * details::packed_sizeof<details::take_subsequence_t<I, type_sequence>>));
+        return reinterpret_cast<const details::sequence_element_t<I, type_sequence>*>(
+            data + (capacity * details::packed_sizeof<details::take_subsequence_t<I, type_sequence>>));
     }
 
     template<std::size_t I>
     constexpr static auto column(std::byte* data, const std::size_t& capacity) -> details::sequence_element_t<I, type_sequence>* {
-        return reinterpret_cast<details::sequence_element_t<I, type_sequence>*>(data + (capacity * details::packed_sizeof<details::take_subsequence_t<I, type_sequence>>));
+        return reinterpret_cast<details::sequence_element_t<I, type_sequence>*>(
+            data + (capacity * details::packed_sizeof<details::take_subsequence_t<I, type_sequence>>));
     }
 
     template<std::size_t I>
-    constexpr static auto copy_column(std::byte* dst, const std::size_t& dst_capacity, const std::byte* src, const std::size_t& src_capacity, const std::size_t& size) -> std::byte* {
+    constexpr static auto copy_column(std::byte* dst, const std::size_t& dst_capacity, const std::byte* src, const std::size_t& src_capacity) -> std::byte* {
         return reinterpret_cast<std::byte*>(std::memcpy(
             column<I>(dst, dst_capacity),
             column<I>(src, src_capacity), 
-            size*sizeof(details::sequence_element_t<I, type_sequence>)
+            std::min(dst_capacity, src_capacity)*sizeof(details::sequence_element_t<I, type_sequence>)
         ));
     }
 };

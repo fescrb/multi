@@ -11,16 +11,15 @@
 #include <ranges>
 
 template<class T>
-auto typed_rand() {
+auto typed_rand() -> T {
     return static_cast<T>(rand() % std::numeric_limits<T>::max());
 }
 
 template<class T>
     requires std::is_floating_point_v<T>
-auto typed_rand() {
+auto typed_rand() -> T {
     return static_cast<T>(rand()) / static_cast<T>(RAND_MAX);
 }
-
 
 template<class... Ts>
 auto rand_tuple() {
