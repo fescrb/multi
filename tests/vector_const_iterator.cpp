@@ -305,4 +305,24 @@ TEST(vector_const_iterator, constraint_passing) {
     static_assert(std::random_access_iterator<multi::vector<int>::const_iterator<0>>);
     static_assert(multi::selectable<multi::vector<int>::const_iterator<0>, 0>);
     static_assert(multi::selectable<multi::vector<bool, int>::const_iterator<0, 1>, 0>);
+    static_assert(std::three_way_comparable<multi::vector<bool, int>::const_iterator<0, 1>>);
+    static_assert(std::three_way_comparable_with<
+        multi::vector<bool, int>::const_iterator<0, 1>, 
+        multi::vector<bool, int>::const_iterator<0>>);
+}
+
+TEST(vector_const_iterator, select_comparison) {
+    multi::vector<bool, int, double> v_mut;
+    const multi::vector<bool, int, double>& v = v_mut;
+    auto it = v.begin();
+    auto it_select = it.template select<0, 1>();
+    EXPECT_EQ(it, it_select);
+    EXPECT_GE(it, it_select);
+    EXPECT_LE(it, it_select);
+    EXPECT_GT(it+1, it_select);
+    EXPECT_GE(it+1, it_select);
+    EXPECT_NE(it+1, it_select);
+    EXPECT_LT(it-1, it_select);
+    EXPECT_LE(it-1, it_select);
+    EXPECT_NE(it-1, it_select);
 }
