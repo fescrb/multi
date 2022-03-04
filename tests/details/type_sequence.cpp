@@ -52,3 +52,8 @@ TEST(type_sequence, take_subsequence) {
     static_assert(std::is_same_v<multi::details::take_subsequence_t<3, multi::details::type_sequence<bool, int, double>>, multi::details::type_sequence<bool, int, double>>);
     static_assert(std::is_same_v<multi::details::take_subsequence_t<0, multi::details::type_sequence<bool, int, double>>, multi::details::type_sequence<>>);
 }
+
+TEST(type_sequence, is_trivially_copyable) {
+    static_assert(multi::details::is_trivially_copyable_v<multi::details::type_sequence<bool, int, double>>);
+    static_assert(!multi::details::is_trivially_copyable_v<multi::details::type_sequence<bool, int, std::vector<double>>>);
+}

@@ -17,9 +17,6 @@ concept selectable = requires (const T& t) {
     t.template select<I, Is...>();
 };
 
-template<class T>
-using select_all_t = typename T::select_all_type;
-
 template<class T, std::size_t I, std::size_t... Is>
 using select_t = decltype(std::declval<T>().template select<I, Is...>());
 
@@ -48,15 +45,16 @@ private:
 };
 
 template<std::size_t I, std::size_t... Is>
-struct select_fn final {
+struct select_closure final {
     template<class R>
-    auto operator()(R& range) const {
+        requires std::ranges::range<R>
+    auto operator()(R&& range) const {
         return select_view<R, I, Is...>(range);
     }
 
     template<class T>
         requires selectable<T, I, Is...>
-    auto operator()(const T& val) const {
+    auto operator()(T&& val) const {
         return val.template select<I, Is...>();
     }
 
@@ -67,12 +65,12 @@ struct select_fn final {
 
     template<class R>
         requires std::ranges::range<R>
-    friend decltype(auto) operator|(R& range, const select_fn& fun) {
+    friend decltype(auto) operator|(R&& range, const select_closure& fun) {
         return fun(range);
     }
 };
 
 template<std::size_t I, std::size_t... Is>
-constexpr select_fn<I, Is...> select;
+constexpr select_closure<I, Is...> select;
 
 } // namespace multi

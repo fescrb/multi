@@ -53,6 +53,16 @@ constexpr std::size_t packed_sizeof<type_sequence<Ts...>> = packed_sizeof<Ts...>
 template<class... Ts>
 constexpr std::size_t max_alignof<type_sequence<Ts...>> = max_alignof<Ts...>;
 
+template<class T>
+constexpr bool is_trivially_copyable_v = std::is_trivially_copyable_v<T>;
+
+template<class T, class... Ts>
+constexpr bool is_trivially_copyable_v<type_sequence<T, Ts...>> = is_trivially_copyable_v<T> && is_trivially_copyable_v<type_sequence<Ts...>>;
+
+template<class T>
+constexpr bool is_trivially_copyable_v<type_sequence<T>> = std::is_trivially_copyable_v<T>;
+
+
 } // namespace details
 
 }  // namespace multi
