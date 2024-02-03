@@ -36,3 +36,5 @@
 
 # Build intermediates
 build/
+
+llvm.sh

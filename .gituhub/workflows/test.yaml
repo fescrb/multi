@@ -1,0 +1,46 @@
+name: Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - run: |
+        apt install wget cmake make -y
+        wget https://apt.llvm.org/llvm.sh
+        bash llvm.sh 17 all
+      
+    - env: 
+        CXX: clang++-17
+      run: |
+        cmake .
+        make
+    
+    - run: test/tests
+
+  
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - run: |
+        apt install wget cmake make -y
+        wget https://apt.llvm.org/llvm.sh
+        bash llvm.sh 17 all
+      
+    - env: 
+        CXX: clang++-17
+      run: |
+        cmake -DCMAKE_BUILD_TYPE=Release .
+        make
+    
+    - run: microbench/microbench
