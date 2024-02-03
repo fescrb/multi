@@ -34,7 +34,9 @@
 # VSCode 
 .vscode/
 
-# Build intermediates
+# Build files
 build/
-
 llvm.sh
+
+# Environment variable setting
+.env
