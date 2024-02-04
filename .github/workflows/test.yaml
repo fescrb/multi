@@ -8,18 +8,20 @@ on:
 
 env:
   DEBIAN_FRONTEND: noninteractive
+  CXX: clang++-17
 
 jobs:
   tests:
     runs-on: ubuntu-latest
-    container: ubuntu:20.04
+    container: ubuntu:22.04
     steps:
     - name: Install Dependencies
       run: |
         apt update -y
-        apt install wget cmake make git python3 python3-pip -y
+        apt install wget cmake make git python3 python3-pip lsb-release software-properties-common -y
         wget https://apt.llvm.org/llvm.sh
         bash llvm.sh 17 all
+        git config --global safe.directory '*'
 
     - uses: actions/checkout@v3
       with:
@@ -29,7 +31,7 @@ jobs:
       run: |
         pip3 install -r requirements.txt
         conan profile detect
-        conan install . -pr .github/profiles/Debug
+        conan install . -pr .github/profiles/Debug --build=missing
       
     - name: Build
       env: 
@@ -44,7 +46,9 @@ jobs:
       uses: dorny/test-reporter@v1
       if: success() || failure()
       with: 
-        path: test_result.xml
+        name: Unit Tests
+        path: build/Debug/test_result.xml
+        reporter: java-junit
 
     - name: Download previous benchmark data
       uses: actions/cache@v4
