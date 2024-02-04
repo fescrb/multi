@@ -15,6 +15,7 @@ list(APPEND sources ${CMAKE_CURRENT_SOURCE_DIR}/details/max_alignof.cpp
 
 add_executable(tests ${sources})
 
-target_link_libraries(tests gmock_main gmock gtest)
+target_include_directories(tests PUBLIC ${GTest_INCLUDE_DIR})
+target_link_libraries(tests GTest::gmock_main GTest::gmock GTest::gtest)
 
 set_property(TARGET tests PROPERTY CXX_STANDARD 20)

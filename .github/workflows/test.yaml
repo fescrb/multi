@@ -1,0 +1,64 @@
+name: Multi CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  DEBIAN_FRONTEND: noninteractive
+  CXX: clang++-17
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    container: ubuntu:22.04
+    steps:
+    - name: Install Dependencies
+      run: |
+        apt update -y
+        apt install wget cmake make git python3 python3-pip lsb-release software-properties-common -y
+        wget https://apt.llvm.org/llvm.sh
+        bash llvm.sh 17 all
+        git config --global safe.directory '*'
+
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    
+    - name: Post-checkout setup
+      run: |
+        pip3 install -r requirements.txt
+        conan profile detect
+        conan install . -pr .github/profiles/Debug --build=missing
+      
+    - name: Build
+      env: 
+        CXX: clang++-17
+      run: |
+        conan build . -pr .github/profiles/Debug
+    
+    - name: Run Tests
+      run: ctest --test-dir build/Debug
+    
+    - name: Test reports  
+      uses: dorny/test-reporter@v1
+      if: success() || failure()
+      with: 
+        name: Unit Tests
+        path: build/Debug/test_result.xml
+        reporter: java-junit
+
+    - name: Download previous benchmark data
+      uses: actions/cache@v4
+      with:
+        path: ./cache
+        key: microbench
+
+    - name: Store benchmark result
+      uses: benchmark-action/github-action-benchmark@v1
+      with:
+        tool: 'googlecpp'
+        output-file-path: build/Debug/benchmark_result.json
+        external-data-json-path: ./cache/benchmark-data.json
