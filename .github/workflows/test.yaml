@@ -1,4 +1,4 @@
-name: Tests
+name: Multi CI
 
 on:
   push:
@@ -9,39 +9,47 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    container: ubuntu:20.04
     steps:
     - uses: actions/checkout@v3
       with:
         submodules: recursive
-    - run: |
+        
+    - name: Install Dependencies
+      run: |
         apt install wget cmake make -y
         wget https://apt.llvm.org/llvm.sh
         bash llvm.sh 17 all
       
-    - env: 
+    - name: Build
+      env: 
         CXX: clang++-17
       run: |
         cmake .
         make
     
-    - run: test/tests
-
-  
-  bench:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: recursive
-    - run: |
-        apt install wget cmake make -y
-        wget https://apt.llvm.org/llvm.sh
-        bash llvm.sh 17 all
-      
-    - env: 
-        CXX: clang++-17
-      run: |
-        cmake -DCMAKE_BUILD_TYPE=Release .
-        make
+    - name: Run Unit Tests
+      run: test/tests --gtest_output=xml:test_result.xml
     
-    - run: microbench/microbench
+    - name: Test reports  
+      uses: dorny/test-reporter@v1
+      if: success() || failure()
+      with: 
+        path: test_result.xml
+
+
+    - name: Download previous benchmark data
+      uses: actions/cache@v4
+      with:
+        path: ./cache
+        key: microbench
+    
+    - name: Run Benchmarks
+      run: microbench/microbench --benchmark_format=json | tee benchmark_result.json
+
+    - name: Store benchmark result
+      uses: benchmark-action/github-action-benchmark@v1
+      with:
+        tool: 'googlecpp'
+        output-file-path: benchmark_result.json
+        external-data-json-path: ./cache/benchmark-data.json
