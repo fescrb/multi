@@ -37,6 +37,7 @@
 # Build files
 build/
 llvm.sh
+CMakeUserPresets.json
 
 # Environment variable setting
 .env

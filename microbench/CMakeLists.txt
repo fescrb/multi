@@ -8,6 +8,7 @@ list(APPEND sources ${CMAKE_CURRENT_SOURCE_DIR}/vector.cpp
 
 add_executable(microbench ${sources})
 
-target_link_libraries(microbench benchmark_main)
+target_include_directories(tests PUBLIC ${GTest_INCLUDE_DIR} ${Benchmark_INCLUDE_DIR})
+target_link_libraries(microbench benchmark::benchmark_main)
 
 set_property(TARGET microbench PROPERTY CXX_STANDARD 20)

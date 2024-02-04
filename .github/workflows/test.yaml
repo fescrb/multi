@@ -11,25 +11,31 @@ jobs:
     runs-on: ubuntu-latest
     container: ubuntu:20.04
     steps:
+    - name: Install Dependencies
+      run: |
+        apt update -y
+        apt install wget cmake make git python3 python3-pip -y
+        wget https://apt.llvm.org/llvm.sh
+        bash llvm.sh 17 all
+
     - uses: actions/checkout@v3
       with:
         submodules: recursive
-        
-    - name: Install Dependencies
+    
+    - name: Post-checkout setup
       run: |
-        apt install wget cmake make -y
-        wget https://apt.llvm.org/llvm.sh
-        bash llvm.sh 17 all
+        pip3 install -r requirements.txt
+        conan profile detect
+        conan install . -pr .github/profiles/Debug
       
     - name: Build
       env: 
         CXX: clang++-17
       run: |
-        cmake .
-        make
+        conan build . -pr .github/profiles/Debug
     
-    - name: Run Unit Tests
-      run: test/tests --gtest_output=xml:test_result.xml
+    - name: Run Tests
+      run: ctest --test-dir build/Debug
     
     - name: Test reports  
       uses: dorny/test-reporter@v1
@@ -37,19 +43,15 @@ jobs:
       with: 
         path: test_result.xml
 
-
     - name: Download previous benchmark data
       uses: actions/cache@v4
       with:
         path: ./cache
         key: microbench
-    
-    - name: Run Benchmarks
-      run: microbench/microbench --benchmark_format=json | tee benchmark_result.json
 
     - name: Store benchmark result
       uses: benchmark-action/github-action-benchmark@v1
       with:
         tool: 'googlecpp'
-        output-file-path: benchmark_result.json
+        output-file-path: build/Debug/benchmark_result.json
         external-data-json-path: ./cache/benchmark-data.json

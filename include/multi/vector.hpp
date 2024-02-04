@@ -34,20 +34,20 @@ public:
     template<std::size_t I>
     using const_pointer = const details::sequence_element_t<I, type_sequence>*;
 
-    constexpr vector(allocator_type allocator = {}) : _data(nullptr), _size(0), _capacity(0), _allocator(allocator) {}
+    vector(allocator_type allocator = allocator_type()) : _data(nullptr), _size(0), _capacity(0), _allocator(allocator) {}
 
-    constexpr vector(const vector& other)
+    vector(const vector& other)
     :   _data(nullptr), _size(0), _capacity(0), _allocator(other._allocator) {
         operator=(other);
     }
 
-    constexpr ~vector() {
+    ~vector() {
         if (_data) {
             _allocator.deallocate_bytes(_data, _capacity*packed_sizeof, max_alignof);
         }
     }
 
-    constexpr auto operator=(const vector& other) {
+    auto operator=(const vector& other) {
         if (_data) {
             _allocator.deallocate_bytes(_data, _capacity*packed_sizeof, max_alignof);
         }
@@ -72,7 +72,7 @@ public:
         return _capacity;
     }
 
-    constexpr auto get_allocator() const noexcept -> allocator_type {
+    auto get_allocator() const noexcept -> allocator_type {
         return _allocator;
     }
 
