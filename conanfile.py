@@ -17,6 +17,7 @@ class Multi(ConanFile):
 
     def build_requirements(self):
         self.tool_requires('cmake/3.27.5')
+        self.tool_requires('doxygen/1.9.1')
 
     def layout(self):
         cmake_layout(self)

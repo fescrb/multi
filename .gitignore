@@ -38,6 +38,7 @@
 build/
 llvm.sh
 CMakeUserPresets.json
+docs/Doxyfile
 
 # Environment variable setting
 .env

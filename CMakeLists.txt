@@ -8,6 +8,7 @@ project(multi CXX)
 
 option(MULTI_ENABLE_TESTING "Build Unit Tests" ON)
 option(MULTI_ENABLE_BENCHMARKING "Build Micro Benchmarks" ON)
+option(MULTI_DOCS "Build Docs" ON)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -27,3 +28,8 @@ if (${MULTI_ENABLE_BENCHMARKING})
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/microbench)
     add_test(NAME microbench COMMAND microbench/microbench --benchmark_out_format=json --benchmark_out=benchmark_result.json)
 endif(${MULTI_ENABLE_BENCHMARKING})
+
+if (${MULTI_DOCS})
+    find_package(Doxygen REQUIRED)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/docs)
+endif(${MULTI_DOCS})
