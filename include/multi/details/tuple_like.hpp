@@ -5,34 +5,33 @@
 
 #pragma once
 
+#include <array>
+#include <tuple>
 #include <type_traits>
 #include <utility>
-#include <tuple>
-#include <array>
-
-
 
 namespace multi::details {
 
-template<typename T>
+template <typename T>
 struct is_tuple_like : std::false_type {};
 
-template<typename... Ts>
+template <typename... Ts>
 struct is_tuple_like<std::tuple<Ts...>> : std::true_type {};
 
-template<typename T, typename U>
+template <typename T, typename U>
 struct is_tuple_like<std::pair<T, U>> : std::true_type {};
 
-template<typename T, size_t S>
+template <typename T, size_t S>
 struct is_tuple_like<std::array<T, S>> : std::true_type {};
 
-template<typename T>
+template <typename T>
 constexpr bool is_tuple_like_v = is_tuple_like<T>::value;
 
-template<typename T>
+template <typename T>
 concept tuple_like = is_tuple_like_v<T>;
 
-template<typename T>
-concept tuple_like_element = tuple_like<typename std::iterator_traits<std::ranges::iterator_t<T>>::value_type>;
+template <typename T>
+concept tuple_like_element = tuple_like<
+    typename std::iterator_traits<std::ranges::iterator_t<T>>::value_type>;
 
-} // namespace multi::details
+}  // namespace multi::details
