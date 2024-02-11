@@ -3,12 +3,10 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          https://www.boost.org/LICENSE_1_0.txt)
 
-
-#include <limits>
 #include <concepts>
+#include <limits>
 
-
-template<class T>
+template <class T>
 struct rand_value {
     T value;
     rand_value() {
@@ -16,16 +14,14 @@ struct rand_value {
     }
 };
 
-template<>
+template <>
 struct rand_value<bool> {
     bool value;
-    rand_value() {
-        value = rand() % 2 == 0;
-    }
+    rand_value() { value = rand() % 2 == 0; }
 };
 
-template<class T>
-requires std::floating_point<T>
+template <class T>
+    requires std::floating_point<T>
 struct rand_value<T> {
     T value;
     rand_value() {
@@ -33,12 +29,12 @@ struct rand_value<T> {
     }
 };
 
-template<class T>
+template <class T>
 T make_rand() {
     return rand_value<T>().value;
 }
 
-template<class... Ts>
+template <class... Ts>
 std::tuple<Ts...> rand_tuple() {
     return std::tuple<Ts...>(make_rand<Ts>()...);
 }

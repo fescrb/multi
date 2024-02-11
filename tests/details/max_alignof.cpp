@@ -8,9 +8,9 @@
 #include <multi/details/max_alignof.hpp>
 
 TEST(max_alignof, static_assert) {
-  static_assert(multi::details::max_alignof<char, int, double> ==
-                std::max({alignof(char), alignof(int), alignof(double)}));
-  static_assert(multi::details::max_alignof<char, int> ==
-                std::max({alignof(char), alignof(int)}));
-  static_assert(multi::details::max_alignof<> == 1);
+    static_assert(multi::details::max_alignof<char, int, double> ==
+                  std::max({alignof(char), alignof(int), alignof(double)}));
+    static_assert(multi::details::max_alignof<char, int> ==
+                  std::max({alignof(char), alignof(int)}));
+    static_assert(multi::details::max_alignof<> == 1);
 }

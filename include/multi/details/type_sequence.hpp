@@ -26,7 +26,7 @@ using subsequence_t = typename subsequence<Is, Ts>::type;
 
 template <class... Ts>
 struct type_sequence {
-  static constexpr std::size_t size() noexcept { return sizeof...(Ts); }
+    static constexpr std::size_t size() noexcept { return sizeof...(Ts); }
 };
 
 template <std::size_t I, class T, class... Ts>
@@ -35,12 +35,12 @@ struct sequence_element<I, type_sequence<T, Ts...>>
 
 template <class T, class... Ts>
 struct sequence_element<0, type_sequence<T, Ts...>> {
-  using type = T;
+    using type = T;
 };
 
 template <std::size_t... Is, class Ts>
 struct subsequence<std::index_sequence<Is...>, Ts> {
-  using type = type_sequence<typename sequence_element<Is, Ts>::type...>;
+    using type = type_sequence<typename sequence_element<Is, Ts>::type...>;
 };
 
 template <std::size_t I, class Ts>
