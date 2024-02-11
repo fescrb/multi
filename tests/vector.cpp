@@ -3,12 +3,11 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          https://www.boost.org/LICENSE_1_0.txt)
 
-#include <multi/vector.hpp>
-
 #include <gtest/gtest.h>
 
-#include <rand.hpp>
+#include "rand.hpp"
 #include <multi/select.hpp>
+#include <multi/vector.hpp>
 
 TEST(vector, empty) {
     multi::vector<bool, int, double> empty_v;
@@ -37,20 +36,21 @@ TEST(vector, push_back_and_element_access) {
     const multi::vector<bool, int, double>& const_v = v;
     std::vector<std::tuple<bool, int, double>> std_v;
 
-    for(int _ = 0; _ < CAPACITY ; ++_) {
+    for (int _ = 0; _ < CAPACITY; ++_) {
         auto val = rand_tuple<bool, int, double>();
-        auto collected_val = std::make_tuple(std::get<0>(val), std::get<1>(val));
+        auto collected_val =
+            std::make_tuple(std::get<0>(val), std::get<1>(val));
         v.push_back(val);
         std_v.push_back(val);
-        EXPECT_EQ(v[v.size()-1], val);
+        EXPECT_EQ(v[v.size() - 1], val);
         EXPECT_EQ(v.back(), val);
         EXPECT_EQ(v.front(), std_v[0]);
-        auto col_read = v.template collect<0, 1>(v.size()-1);
+        auto col_read = v.template collect<0, 1>(v.size() - 1);
         EXPECT_EQ(col_read, collected_val);
-        EXPECT_EQ(const_v[v.size()-1], val);
+        EXPECT_EQ(const_v[v.size() - 1], val);
         EXPECT_EQ(const_v.back(), val);
         EXPECT_EQ(const_v.front(), std_v[0]);
-        auto const_col_read = const_v.template collect<0, 1>(v.size()-1);
+        auto const_col_read = const_v.template collect<0, 1>(v.size() - 1);
         EXPECT_EQ(const_col_read, collected_val);
     }
 
@@ -59,7 +59,7 @@ TEST(vector, push_back_and_element_access) {
     EXPECT_FALSE(v.empty());
     EXPECT_TRUE(v);
 
-    for(int i = 0; i < CAPACITY; i++) {
+    for (int i = 0; i < CAPACITY; i++) {
         EXPECT_EQ(v[i], std_v[i]);
         EXPECT_EQ(const_v[i], std_v[i]);
     }
@@ -69,7 +69,7 @@ TEST(vector, copy_construct) {
     constexpr std::size_t CAPACITY = 100;
     multi::vector<bool, int, double> v;
 
-    for(int _ = 0; _ < CAPACITY ; ++_) {
+    for (int _ = 0; _ < CAPACITY; ++_) {
         auto val = rand_tuple<bool, int, double>();
         v.push_back(val);
     }
@@ -81,7 +81,7 @@ TEST(vector, copy_construct) {
 
     multi::vector<bool, int, double> v_cp = v;
 
-    for(int i = 0; i < CAPACITY; i++) {
+    for (int i = 0; i < CAPACITY; i++) {
         EXPECT_EQ(v[i], v_cp[i]);
     }
 
@@ -95,7 +95,7 @@ TEST(vector, index_operator) {
     multi::vector<bool, int, double> v;
     std::vector<std::tuple<bool, int, double>> std_v;
 
-    for(int _ = 0; _ < CAPACITY ; ++_) {
+    for (int _ = 0; _ < CAPACITY; ++_) {
         auto val = rand_tuple<bool, int, double>();
         v.push_back(val);
         std_v.push_back(val);
@@ -106,13 +106,13 @@ TEST(vector, index_operator) {
     ASSERT_FALSE(v.empty());
     ASSERT_TRUE(v);
 
-    for(int i = 0; i < CAPACITY; i++) {
+    for (int i = 0; i < CAPACITY; i++) {
         auto val = rand_tuple<bool, int, double>();
         v[i] = val;
         std_v[i] = val;
     }
 
-    for(int i = 0; i < CAPACITY; i++) {
+    for (int i = 0; i < CAPACITY; i++) {
         EXPECT_EQ(v[i], std_v[i]);
     }
 }
@@ -122,7 +122,7 @@ TEST(vector, at) {
     multi::vector<bool, int, double> v;
     std::vector<std::tuple<bool, int, double>> std_v;
 
-    for(int _ = 0; _ < CAPACITY ; ++_) {
+    for (int _ = 0; _ < CAPACITY; ++_) {
         auto val = rand_tuple<bool, int, double>();
         v.push_back(val);
         std_v.push_back(val);
@@ -133,13 +133,13 @@ TEST(vector, at) {
     ASSERT_FALSE(v.empty());
     ASSERT_TRUE(v);
 
-    for(int i = 0; i < CAPACITY; i++) {
+    for (int i = 0; i < CAPACITY; i++) {
         auto val = rand_tuple<bool, int, double>();
         v.at(i) = val;
         std_v.at(i) = val;
     }
-    
-    for(int i = 0; i < CAPACITY; i++) {
+
+    for (int i = 0; i < CAPACITY; i++) {
         EXPECT_EQ(v[i], std_v[i]);
     }
 }
@@ -148,20 +148,13 @@ TEST(vector, range_constraints) {
     constexpr std::size_t CAPACITY = 100;
     static_assert(std::ranges::range<multi::vector<int>>);
     static_assert(std::ranges::range<const multi::vector<int>>);
-    static_assert(
-        std::sentinel_for<
-            decltype(
-                std::declval<multi::vector<int>>().end()
-            ),
-            decltype(
-                std::declval<multi::vector<int>>().begin()
-            )
-        >
-    );
+    static_assert(std::sentinel_for<
+                  decltype(std::declval<multi::vector<int>>().end()),
+                  decltype(std::declval<multi::vector<int>>().begin())>);
     multi::vector<bool, int, double> v;
     const multi::vector<bool, int, double>& const_v = v;
 
-    for(int _ = 0; _ < CAPACITY ; ++_) {
+    for (int _ = 0; _ < CAPACITY; ++_) {
         auto val = rand_tuple<bool, int, double>();
         v.push_back(val);
     }
@@ -182,7 +175,7 @@ TEST(vector, iterator_equivalence) {
     multi::vector<bool, int, double> v;
     const multi::vector<bool, int, double>& const_v = v;
 
-    for(int _ = 0; _ < CAPACITY ; ++_) {
+    for (int _ = 0; _ < CAPACITY; ++_) {
         auto val = rand_tuple<bool, int, double>();
         v.push_back(val);
     }
@@ -197,14 +190,14 @@ TEST(vector, iterator_equivalence) {
     EXPECT_EQ(it, it_const);
     EXPECT_GE(it, it_const);
     EXPECT_LE(it, it_const);
-    EXPECT_GT(it+1, it_const);
-    EXPECT_GE(it+1, it_const);
-    EXPECT_NE(it+1, it_const);
-    EXPECT_LT(it-1, it_const);
-    EXPECT_LE(it-1, it_const);
-    EXPECT_NE(it-1, it_const);
+    EXPECT_GT(it + 1, it_const);
+    EXPECT_GE(it + 1, it_const);
+    EXPECT_NE(it + 1, it_const);
+    EXPECT_LT(it - 1, it_const);
+    EXPECT_LE(it - 1, it_const);
+    EXPECT_NE(it - 1, it_const);
 
     static_assert(std::three_way_comparable_with<
-        multi::vector<bool, int>::iterator<0, 1>, 
-        multi::vector<bool, int>::const_iterator<0,1>>);
+                  multi::vector<bool, int>::iterator<0, 1>,
+                  multi::vector<bool, int>::const_iterator<0, 1>>);
 }

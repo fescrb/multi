@@ -3,21 +3,20 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          https://www.boost.org/LICENSE_1_0.txt)
 
-#include <multi/vector.hpp>
+#include <ostream>
 
 #include <gtest/gtest.h>
 
-#include <rand.hpp>
+#include "rand.hpp"
 #include <multi/select.hpp>
-
-#include <ostream>
+#include <multi/vector.hpp>
 
 TEST(vector_iterator, increment) {
     constexpr std::size_t CAPACITY = 100;
     multi::vector<bool, int, double> v;
     std::vector<std::tuple<bool, int, double>> std_v;
 
-    for(int _ = 0; _ < CAPACITY ; ++_) {
+    for (int _ = 0; _ < CAPACITY; ++_) {
         auto val = rand_tuple<bool, int, double>();
         v.push_back(val);
         std_v.push_back(val);
@@ -31,7 +30,7 @@ TEST(vector_iterator, increment) {
     auto it = v.begin();
     auto std_it = std_v.begin();
 
-    while(it != v.end()) {
+    while (it != v.end()) {
         EXPECT_EQ(*it, *std_it);
         ++it;
         ++std_it;
@@ -40,13 +39,13 @@ TEST(vector_iterator, increment) {
     it = v.begin();
     std_it = std_v.begin();
 
-    while(it != v.end()) {
+    while (it != v.end()) {
         EXPECT_EQ(*it, *std_it);
-        it ++;
+        it++;
         std_it++;
     }
-    
-    for(int i = 0; i < CAPACITY; i++) {
+
+    for (int i = 0; i < CAPACITY; i++) {
         EXPECT_EQ(v[i], std_v[i]);
     }
 }
@@ -56,7 +55,7 @@ TEST(vector_iterator, assign) {
     multi::vector<bool, int, double> v;
     std::vector<std::tuple<bool, int, double>> std_v;
 
-    for(int _ = 0; _ < CAPACITY ; ++_) {
+    for (int _ = 0; _ < CAPACITY; ++_) {
         auto val = rand_tuple<bool, int, double>();
         v.push_back(val);
         std_v.push_back(val);
@@ -70,13 +69,13 @@ TEST(vector_iterator, assign) {
     auto it = v.begin();
     auto std_it = std_v.begin();
 
-    while(it != v.end()) {
+    while (it != v.end()) {
         auto val = rand_tuple<bool, int, double>();
         *(it++) = val;
         *(std_it++) = val;
     }
-    
-    for(int i = 0; i < CAPACITY; i++) {
+
+    for (int i = 0; i < CAPACITY; i++) {
         EXPECT_EQ(v[i], std_v[i]);
     }
 }
@@ -87,7 +86,7 @@ TEST(vector_iterator, add) {
     multi::vector<bool, int, double> v;
     std::vector<std::tuple<bool, int, double>> std_v;
 
-    for(int _ = 0; _ < CAPACITY ; ++_) {
+    for (int _ = 0; _ < CAPACITY; ++_) {
         auto val = rand_tuple<bool, int, double>();
         v.push_back(val);
         std_v.push_back(val);
@@ -101,35 +100,35 @@ TEST(vector_iterator, add) {
     auto it = v.begin();
     auto std_it = std_v.begin();
 
-    while(it < v.end()) {
+    while (it < v.end()) {
         EXPECT_EQ(*it, *std_it);
-        it+=step;
-        std_it+=step;
+        it += step;
+        std_it += step;
     }
-    
-    for(int i = 0; i < CAPACITY; i++) {
+
+    for (int i = 0; i < CAPACITY; i++) {
         EXPECT_EQ(v[i], std_v[i]);
     }
 
     it = v.begin();
     std_it = std_v.begin();
 
-    while(it < v.end()) {
+    while (it < v.end()) {
         EXPECT_EQ(*it, *std_it);
         it = it + step;
-        std_it= std_it + step;
+        std_it = std_it + step;
     }
 
     it = v.begin();
     std_it = std_v.begin();
 
-    while(it < v.end()) {
+    while (it < v.end()) {
         EXPECT_EQ(*it, *std_it);
         it = step + it;
         std_it = step + std_it;
     }
-    
-    for(int i = 0; i < CAPACITY; i++) {
+
+    for (int i = 0; i < CAPACITY; i++) {
         EXPECT_EQ(v[i], std_v[i]);
     }
 }
@@ -139,7 +138,7 @@ TEST(vector_iterator, index_operator) {
     multi::vector<bool, int, double> v;
     std::vector<std::tuple<bool, int, double>> std_v;
 
-    for(int _ = 0; _ < CAPACITY ; ++_) {
+    for (int _ = 0; _ < CAPACITY; ++_) {
         auto val = rand_tuple<bool, int, double>();
         v.push_back(val);
         std_v.push_back(val);
@@ -155,7 +154,7 @@ TEST(vector_iterator, index_operator) {
     auto it = v.begin() + start;
     auto std_it = std_v.begin() + start;
 
-    for(int i = 0; i < (CAPACITY / 2); i++) {
+    for (int i = 0; i < (CAPACITY / 2); i++) {
         EXPECT_EQ(it[i], std_it[i]);
     }
 }
@@ -165,7 +164,7 @@ TEST(vector_iterator, comparisons) {
     multi::vector<bool, int, double> v;
     std::vector<std::tuple<bool, int, double>> std_v;
 
-    for(int _ = 0; _ < CAPACITY ; ++_) {
+    for (int _ = 0; _ < CAPACITY; ++_) {
         auto val = rand_tuple<bool, int, double>();
         v.push_back(val);
     }
@@ -178,22 +177,22 @@ TEST(vector_iterator, comparisons) {
     EXPECT_LT(v.begin(), v.end());
     EXPECT_NE(v.begin(), v.end());
 
-    EXPECT_LT(v.begin(), v.begin()+1);
-    EXPECT_NE(v.begin(), v.begin()+1);
+    EXPECT_LT(v.begin(), v.begin() + 1);
+    EXPECT_NE(v.begin(), v.begin() + 1);
 
-    EXPECT_GT(v.begin(), v.begin()-1);
-    EXPECT_NE(v.begin(), v.begin()-1);
+    EXPECT_GT(v.begin(), v.begin() - 1);
+    EXPECT_NE(v.begin(), v.begin() - 1);
 
     EXPECT_EQ(v.begin(), v.begin());
-    EXPECT_EQ(v.begin(), v.begin()+0);
-    EXPECT_EQ(v.begin(), v.begin()+1-1);
+    EXPECT_EQ(v.begin(), v.begin() + 0);
+    EXPECT_EQ(v.begin(), v.begin() + 1 - 1);
 }
 
 TEST(vector_iterator, difference) {
     constexpr std::size_t CAPACITY = 100;
     multi::vector<bool, int, double> v;
 
-    for(int _ = 0; _ < CAPACITY ; ++_) {
+    for (int _ = 0; _ < CAPACITY; ++_) {
         auto val = rand_tuple<bool, int, double>();
         v.push_back(val);
     }
@@ -207,7 +206,7 @@ TEST(vector_iterator, difference) {
 
     auto it = v.begin() + start;
 
-    for(int i = 0; i < (CAPACITY / 2); i++) {
+    for (int i = 0; i < (CAPACITY / 2); i++) {
         std::ptrdiff_t offset = rand() % (CAPACITY / 2);
         EXPECT_EQ((it + offset) - it, offset);
     }
@@ -218,7 +217,7 @@ TEST(vector_iterator, decrement) {
     multi::vector<bool, int, double> v;
     std::vector<std::tuple<bool, int, double>> std_v;
 
-    for(int _ = 0; _ < CAPACITY ; ++_) {
+    for (int _ = 0; _ < CAPACITY; ++_) {
         auto val = rand_tuple<bool, int, double>();
         v.push_back(val);
         std_v.push_back(val);
@@ -230,9 +229,9 @@ TEST(vector_iterator, decrement) {
     ASSERT_TRUE(v);
 
     auto it = v.end() - 1;
-    auto std_it = std_v.end() -1;
+    auto std_it = std_v.end() - 1;
 
-    while(it >= v.begin()) {
+    while (it >= v.begin()) {
         EXPECT_EQ(*it, *std_it);
         --it;
         --std_it;
@@ -241,13 +240,13 @@ TEST(vector_iterator, decrement) {
     it = v.end() - 1;
     std_it = std_v.end() - 1;
 
-    while(it >= v.begin()) {
+    while (it >= v.begin()) {
         EXPECT_EQ(*it, *std_it);
         it--;
         std_it--;
     }
-    
-    for(int i = 0; i < CAPACITY; i++) {
+
+    for (int i = 0; i < CAPACITY; i++) {
         EXPECT_EQ(v[i], std_v[i]);
     }
 }
@@ -258,7 +257,7 @@ TEST(vector_iterator, subtract) {
     multi::vector<bool, int, double> v;
     std::vector<std::tuple<bool, int, double>> std_v;
 
-    for(int _ = 0; _ < CAPACITY ; ++_) {
+    for (int _ = 0; _ < CAPACITY; ++_) {
         auto val = rand_tuple<bool, int, double>();
         v.push_back(val);
         std_v.push_back(val);
@@ -270,28 +269,28 @@ TEST(vector_iterator, subtract) {
     ASSERT_TRUE(v);
 
     auto it = v.end() - 1;
-    auto std_it = std_v.end() -1;
+    auto std_it = std_v.end() - 1;
 
-    while(it >= v.begin()) {
+    while (it >= v.begin()) {
         EXPECT_EQ(*it, *std_it);
-        it-=step;
-        std_it-=step;
+        it -= step;
+        std_it -= step;
     }
-    
-    for(int i = 0; i < CAPACITY; i++) {
+
+    for (int i = 0; i < CAPACITY; i++) {
         EXPECT_EQ(v[i], std_v[i]);
     }
 
     it = v.end() - 1;
     std_it = std_v.end() - 1;
 
-    while(it >= v.begin()) {
+    while (it >= v.begin()) {
         EXPECT_EQ(*it, *std_it);
         it = it - step;
-        std_it= std_it - step;
+        std_it = std_it - step;
     }
-    
-    for(int i = 0; i < CAPACITY; i++) {
+
+    for (int i = 0; i < CAPACITY; i++) {
         EXPECT_EQ(v[i], std_v[i]);
     }
 }
@@ -301,7 +300,7 @@ TEST(vector_iterator, select) {
     multi::vector<bool, int, double> v;
     std::vector<std::tuple<bool, int, double>> std_v;
 
-    for(int _ = 0; _ < CAPACITY ; ++_) {
+    for (int _ = 0; _ < CAPACITY; ++_) {
         auto val = rand_tuple<bool, int, double>();
         v.push_back(val);
         std_v.push_back(val);
@@ -315,8 +314,9 @@ TEST(vector_iterator, select) {
     auto it = v.begin().template select<0, 1>();
     auto std_it = std_v.begin();
 
-    while(it != v.end().template select<0, 1>()) {
-        auto std_tup = std::make_tuple(std::get<0>(*std_it), std::get<1>(*std_it));
+    while (it != v.end().template select<0, 1>()) {
+        auto std_tup =
+            std::make_tuple(std::get<0>(*std_it), std::get<1>(*std_it));
         EXPECT_EQ(*it, std_tup);
         ++it;
         ++std_it;
@@ -330,26 +330,39 @@ TEST(vector_iterator, select_comparison) {
     EXPECT_EQ(it, it_select);
     EXPECT_GE(it, it_select);
     EXPECT_LE(it, it_select);
-    EXPECT_GT(it+1, it_select);
-    EXPECT_GE(it+1, it_select);
-    EXPECT_NE(it+1, it_select);
-    EXPECT_LT(it-1, it_select);
-    EXPECT_LE(it-1, it_select);
-    EXPECT_NE(it-1, it_select);
+    EXPECT_GT(it + 1, it_select);
+    EXPECT_GE(it + 1, it_select);
+    EXPECT_NE(it + 1, it_select);
+    EXPECT_LT(it - 1, it_select);
+    EXPECT_LE(it - 1, it_select);
+    EXPECT_NE(it - 1, it_select);
 }
 
 TEST(vector_iterator, constraint_passing) {
     static_assert(std::random_access_iterator<multi::vector<int>::iterator<0>>);
-    static_assert(std::same_as<std::iterator_traits<multi::vector<int>::iterator<0>>::difference_type, std::ptrdiff_t>);
-    static_assert(std::same_as<std::iterator_traits<multi::vector<int>::iterator<0>>::reference, std::tuple<int&>>);
-    static_assert(std::same_as<std::iterator_traits<multi::vector<int>::iterator<0>>::value_type, std::tuple<int>>);
-    static_assert(std::same_as<std::iterator_traits<multi::vector<int>::iterator<0>>::iterator_category, std::random_access_iterator_tag>);
+    static_assert(
+        std::same_as<std::iterator_traits<
+                         multi::vector<int>::iterator<0>>::difference_type,
+                     std::ptrdiff_t>);
+    static_assert(
+        std::same_as<
+            std::iterator_traits<multi::vector<int>::iterator<0>>::reference,
+            std::tuple<int&>>);
+    static_assert(
+        std::same_as<
+            std::iterator_traits<multi::vector<int>::iterator<0>>::value_type,
+            std::tuple<int>>);
+    static_assert(
+        std::same_as<std::iterator_traits<
+                         multi::vector<int>::iterator<0>>::iterator_category,
+                     std::random_access_iterator_tag>);
     // TODO: reconsider
-    //static_assert(multi::selectable<multi::vector<int>::iterator<0>, 0>);
-    //static_assert(multi::selectable<multi::vector<bool, int>::iterator<0, 1>, 0>);
-    
-    /*static_assert(std::three_way_comparable<multi::vector<bool, int>::iterator<0, 1>>);
-    static_assert(std::three_way_comparable_with<
+    // static_assert(multi::selectable<multi::vector<int>::iterator<0>, 0>);
+    // static_assert(multi::selectable<multi::vector<bool, int>::iterator<0, 1>,
+    // 0>);
+
+    /*static_assert(std::three_way_comparable<multi::vector<bool,
+    int>::iterator<0, 1>>); static_assert(std::three_way_comparable_with<
         multi::vector<bool, int>::iterator<0, 1>,
         multi::vector<bool, int>::iterator<0>>);*/
 }
