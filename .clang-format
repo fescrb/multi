@@ -1,7 +1,7 @@
 ---
 Language:        Cpp
 # BasedOnStyle:  Google
-AccessModifierOffset: -1
+AccessModifierOffset: -4
 AlignAfterOpenBracket: Align
 AlignArrayOfStructures: None
 AlignConsecutiveAssignments:
@@ -106,20 +106,32 @@ IfMacros:
   - KJ_IF_MAYBE
 IncludeBlocks:   Regroup
 IncludeCategories:
-  - Regex:           '^<ext/.*\.h>'
+  - Regex:           '^["<]multi/.*[">]'
+    Priority:        3
+    SortPriority:    0
+    CaseSensitive:   false
+  - Regex:           '^<gtest/.*'
     Priority:        2
     SortPriority:    0
     CaseSensitive:   false
-  - Regex:           '^<.*\.h>'
+  - Regex:           '^<gmock/.*'
+    Priority:        2
+    SortPriority:    0
+    CaseSensitive:   false
+  - Regex:           '^<benchmark/.*'
+    Priority:        2
+    SortPriority:    0
+    CaseSensitive:   false
+  - Regex:           '^".*"'
+    Priority:        3
+    SortPriority:    0
+    CaseSensitive:   false
+  - Regex:           '^<.*>'
     Priority:        1
-    SortPriority:    0
-    CaseSensitive:   false
-  - Regex:           '^<.*'
-    Priority:        2
-    SortPriority:    0
+    SortPriority:    1
     CaseSensitive:   false
   - Regex:           '.*'
-    Priority:        3
+    Priority:        2
     SortPriority:    0
     CaseSensitive:   false
 IncludeIsMainRegex: '([-_](test|unittest))?$'
@@ -131,7 +143,7 @@ IndentExternBlock: AfterExternBlock
 IndentGotoLabels: true
 IndentPPDirectives: None
 IndentRequiresClause: true
-IndentWidth:     2
+IndentWidth:     4
 IndentWrappedFunctionNames: false
 InsertBraces:    false
 InsertNewlineAtEOF: false
