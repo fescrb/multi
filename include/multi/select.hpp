@@ -16,7 +16,7 @@
 namespace multi {
 
 template<std::ranges::input_range R, size_t N, size_t... Ns>
-requires std::ranges::view<R> && multi::details::tuple_like<std::ranges::range_value_t<R>>::value
+requires std::ranges::view<R> && multi::details::tuple_like<std::ranges::range_value_t<R>>
 class select_view : public std::ranges::view_interface<select_view<R, N, Ns...>> {
     R mBase;
 
@@ -72,7 +72,7 @@ public:
 };
 
 template <std::ranges::input_range R, size_t N, size_t... Ns>
-requires std::ranges::view<R> && multi::details::tuple_like<std::ranges::range_value_t<R>>::value
+requires std::ranges::view<R> && multi::details::tuple_like<std::ranges::range_value_t<R>>
 template <bool Const>
 class select_view<R, N, Ns...>::iterator {
     using base_range_t = std::conditional_t<Const, const R, R>;
@@ -219,7 +219,7 @@ public:
 };
 
 template <std::ranges::input_range R, size_t N, size_t... Ns>
-requires std::ranges::view<R> && multi::details::tuple_like<std::ranges::range_value_t<R>>::value
+requires std::ranges::view<R> && multi::details::tuple_like<std::ranges::range_value_t<R>>
 template <bool Const>
 class select_view<R, N, Ns...>::sentinel {
     using base_range_t = std::conditional_t<Const, const R, R>;

@@ -15,16 +15,24 @@
 namespace multi::details {
 
 template<typename T>
-struct tuple_like : std::false_type {};
+struct is_tuple_like : std::false_type {};
 
 template<typename... Ts>
-struct tuple_like<std::tuple<Ts...>> : std::true_type {};
+struct is_tuple_like<std::tuple<Ts...>> : std::true_type {};
 
 template<typename T, typename U>
-struct tuple_like<std::pair<T, U>> : std::true_type {};
+struct is_tuple_like<std::pair<T, U>> : std::true_type {};
 
 template<typename T, size_t S>
-struct tuple_like<std::array<T, S>> : std::true_type {};
+struct is_tuple_like<std::array<T, S>> : std::true_type {};
 
+template<typename T>
+constexpr bool is_tuple_like_v = is_tuple_like<T>::value;
+
+template<typename T>
+concept tuple_like = is_tuple_like_v<T>;
+
+template<typename T>
+concept tuple_like_element = tuple_like<typename std::iterator_traits<std::ranges::iterator_t<T>>::value_type>;
 
 } // namespace multi::details
