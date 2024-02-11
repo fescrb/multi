@@ -5,8 +5,40 @@
 
 
 #include <limits>
+#include <concepts>
+
+
+template<class T>
+struct rand_value {
+    T value;
+    rand_value() {
+        value = static_cast<T>(rand() % std::numeric_limits<T>::max());
+    }
+};
+
+template<>
+struct rand_value<bool> {
+    bool value;
+    rand_value() {
+        value = rand() % 2 == 0;
+    }
+};
+
+template<class T>
+requires std::floating_point<T>
+struct rand_value<T> {
+    T value;
+    rand_value() {
+        value = static_cast<T>(rand()) / std::numeric_limits<int>::max();
+    }
+};
+
+template<class T>
+T make_rand() {
+    return rand_value<T>().value;
+}
 
 template<class... Ts>
-auto rand_tuple() {
-    return std::make_tuple(static_cast<Ts>(rand() % static_cast<int>(std::numeric_limits<Ts>::max()))...);
+std::tuple<Ts...> rand_tuple() {
+    return std::tuple<Ts...>(make_rand<Ts>()...);
 }

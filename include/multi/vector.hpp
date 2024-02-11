@@ -199,8 +199,7 @@ public:
         if(_size + 1 > _capacity) {
             reserve(std::max(_capacity, 1ul) * 2ul);
         }
-        operator[](_size) = value;
-        _size++;
+        operator[](_size++) = value;
     }
 
     constexpr auto reserve(const std::size_t& capacity) -> void {
