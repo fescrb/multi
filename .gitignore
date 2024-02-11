@@ -42,3 +42,4 @@ docs/Doxyfile
 
 # Environment variable setting
 .env
+.python-version

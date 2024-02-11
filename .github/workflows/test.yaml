@@ -31,23 +31,23 @@ jobs:
       run: |
         pip3 install -r requirements.txt
         conan profile detect
-        conan install . -pr .github/profiles/Debug --build=missing
+        conan install . -pr .github/profiles/Release --build=missing
       
     - name: Build
       env: 
         CXX: clang++-17
       run: |
-        conan build . -pr .github/profiles/Debug
+        conan build . -pr .github/profiles/Release
     
     - name: Run Tests
-      run: ctest --test-dir build/Debug
+      run: ctest --test-dir build/Release
     
     - name: Test reports  
       uses: dorny/test-reporter@v1
       if: success() || failure()
       with: 
         name: Unit Tests
-        path: build/Debug/test_result.xml
+        path: build/Release/test_result.xml
         reporter: java-junit
 
     - name: Download previous benchmark data
@@ -60,5 +60,5 @@ jobs:
       uses: benchmark-action/github-action-benchmark@v1
       with:
         tool: 'googlecpp'
-        output-file-path: build/Debug/benchmark_result.json
+        output-file-path: build/Release/benchmark_result.json
         external-data-json-path: ./cache/benchmark-data.json
