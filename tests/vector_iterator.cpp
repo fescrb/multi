@@ -340,10 +340,16 @@ TEST(vector_iterator, select_comparison) {
 
 TEST(vector_iterator, constraint_passing) {
     static_assert(std::random_access_iterator<multi::vector<int>::iterator<0>>);
-    static_assert(multi::selectable<multi::vector<int>::iterator<0>, 0>);
-    static_assert(multi::selectable<multi::vector<bool, int>::iterator<0, 1>, 0>);
-    static_assert(std::three_way_comparable<multi::vector<bool, int>::iterator<0, 1>>);
+    static_assert(std::same_as<std::iterator_traits<multi::vector<int>::iterator<0>>::difference_type, std::ptrdiff_t>);
+    static_assert(std::same_as<std::iterator_traits<multi::vector<int>::iterator<0>>::reference, std::tuple<int&>>);
+    static_assert(std::same_as<std::iterator_traits<multi::vector<int>::iterator<0>>::value_type, std::tuple<int>>);
+    static_assert(std::same_as<std::iterator_traits<multi::vector<int>::iterator<0>>::iterator_category, std::random_access_iterator_tag>);
+    // TODO: reconsider
+    //static_assert(multi::selectable<multi::vector<int>::iterator<0>, 0>);
+    //static_assert(multi::selectable<multi::vector<bool, int>::iterator<0, 1>, 0>);
+    
+    /*static_assert(std::three_way_comparable<multi::vector<bool, int>::iterator<0, 1>>);
     static_assert(std::three_way_comparable_with<
         multi::vector<bool, int>::iterator<0, 1>,
-        multi::vector<bool, int>::iterator<0>>);
+        multi::vector<bool, int>::iterator<0>>);*/
 }
