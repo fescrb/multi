@@ -1,0 +1,31 @@
+name: Format
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  DEBIAN_FRONTEND: noninteractive
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    container: ubuntu:22.04
+    steps:
+    - name: Install Dependencies
+      run: |
+        apt update -y
+        apt install wget cmake make git python3 python3-pip lsb-release software-properties-common -y
+        wget https://apt.llvm.org/llvm.sh
+        bash llvm.sh 17 all
+        git config --global safe.directory '*'
+
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    
+    - name: Check format
+      run: clang-format-17 --style=file -n -Werror $(find include/ tests/ microbench/ -type f -name "*.hpp" -o -name "*.cpp")
+      
