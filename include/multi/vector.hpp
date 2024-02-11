@@ -41,13 +41,17 @@ public:
         operator=(other);
     }
 
+    vector(vector&& other) {
+        operator=(std::move(other));
+    }
+
     ~vector() {
         if (_data) {
             _allocator.deallocate_bytes(_data, _capacity*packed_sizeof, max_alignof);
         }
     }
 
-    auto operator=(const vector& other) {
+    vector& operator=(const vector& other) {
         if (_data) {
             _allocator.deallocate_bytes(_data, _capacity*packed_sizeof, max_alignof);
         }
@@ -55,6 +59,14 @@ public:
         _capacity = other._capacity;
         _data = static_cast<std::byte*>(_allocator.allocate_bytes(_capacity*packed_sizeof, max_alignof));
         std::memcpy(_data, other._data, _capacity*packed_sizeof);
+        return *this;
+    }
+
+    vector& operator=(vector&& other) {
+        std::swap(_data, other._data);
+        std::swap(_size, other._size);
+        std::swap(_capacity, other._capacity);
+        std::swap(_allocator, other._allocator);
     }
 
     /*
