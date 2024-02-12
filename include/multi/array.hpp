@@ -120,17 +120,33 @@ public:
     constexpr const_iterator begin() const { return const_iterator{_data}; }
     constexpr const_iterator cbegin() const { return const_iterator{_data}; }
 
-    constexpr iterator end();
-    constexpr const_iterator end() const;
-    constexpr const_iterator cend() const;
+    constexpr iterator end() { return iterator{_data + sizeof(T) * N}; }
+    constexpr const_iterator end() const {
+        return const_iterator{_data + sizeof(T) * N};
+    }
+    constexpr const_iterator cend() const {
+        return const_iterator{_data + sizeof(T) * N};
+    }
 
-    constexpr reverse_iterator rbegin();
-    constexpr const_reverse_iterator rbegin() const;
-    constexpr const_reverse_iterator crbegin() const;
+    constexpr reverse_iterator rbegin() {
+        return reverse_iterator{_data + sizeof(T) * (N - 1)};
+    }
+    constexpr const_reverse_iterator rbegin() const {
+        return const_reverse_iterator{_data + sizeof(T) * (N - 1)};
+    }
+    constexpr const_reverse_iterator crbegin() const {
+        return const_reverse_iterator{_data + sizeof(T) * (N - 1)};
+    }
 
-    constexpr reverse_iterator rend();
-    constexpr const_reverse_iterator rend() const;
-    constexpr const_reverse_iterator rcend() const;
+    constexpr reverse_iterator rend() {
+        return reverse_iterator { _data - sizeof(T); }
+    }
+    constexpr const_reverse_iterator rend() const {
+        return const_reverse_iterator { _data - sizeof(T); }
+    }
+    constexpr const_reverse_iterator rcend() const {
+        return const_reverse_iterator { _data - sizeof(T); }
+    }
 
     constexpr bool empty() const noexcept { return N == 0; }
     constexpr bool size() const noexcept { return N; }
@@ -146,4 +162,76 @@ public:
     }
 };
 
+template <std::size_t N, class T, class... Ts>
+template <bool Const>
+class array<N, T, Ts...>::iterator {
+    using data_type = std::conditional_t<Const, const std::byte*, std::byte>;
+    data_type _data;
+
+    friend class array;
+
+    iterator() = delete;
+    explicit iterator(data_type data) : _data(data) {}
+
+public:
+    using value_type = array::value_type;
+    using reference_type =
+        std::conditional_t<Const, array::const_reference, array::reference>;
+    using const_reference_type =
+        std::conditional_t<Const, array::const_reference, array::reference>;
+    using iterator_concept = std::random_access_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+
+    iterator(iterator) = default;
+
+    template <bool OtherConst>
+        requires Const
+    iterator(iterator<OtherCost> other) : _data(other._data) {}
+
+    template <std::size_t I>
+    std::conditional_t<Const, const std::tuple_element_t<I, value_type>*,
+                       std::tuple_element_t<I, value_type>*>
+    data() {
+        // TODO
+    }
+
+    template <std::size_t I>
+    const std::tuple_element_t<I, value_type>* data() const {
+        // TODO
+    }
+
+    reference operator*() {
+        // TODO
+    }
+
+    const_reference operator*() const {
+        // TODO
+    }
+
+    iterator& operator++() {
+        _data += sizeof(T);
+        return *this;
+    }
+    void opperator++() { _data += sizeof(T); }
+
+    constexpr iterator operator++(int) {
+        auto temp = *this;
+        _data += sizeof(T);
+        return temp;
+    }
+
+    iterator& operator--();
+    iterator operator--(int);
+    iterator& operator+=(difference_type n);
+    iterator& operator-=(difference_type n);
+    reference operator[](difference_type n);
+    friend auto operator<=>(const interator& lhs, const iterator& rhs) {
+        return lhs._data <=> rhs._data;
+    }
+    iterator operator+(const iterator& lhs, difference_type rhs);
+    iterator operator+(difference_type lhs, const iterator& rhs);
+    iterator operator-(const iterator& lhs, difference_type rhs);
+    iterator operator-(difference_type lhs, const iterator& rhs);
+    difference_type operator-(const iterator& lhs, const iterator& rhs);
+};
 }  // namespace multi
