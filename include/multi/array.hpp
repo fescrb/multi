@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cstdint>
+#include <initializer_list>
 #include <tuple>
 
 #include <multi/details/max_alignof.hpp>
@@ -61,11 +62,30 @@ public:
         requires(I < num_columns)
     using const_pointer_type = const std::tuple_element_t<I, value_type>*;
 
-    array();
-    array(const array&);
+    array() {}
+    array(const array& other) { operator=(other); }
+    array(std::initializer_list<value_type> l) {
+        std::copy(l.begin(), l.end(), begin());
+    }
+
+    template <std::input_iterator It, std::sentinel_for<It> Sent>
+    array(It start, Sent stop) {
+        std::copy(start, stop, begin());
+    }
+
+    template <std::input_iterator It, std::sentinel_for<It> Sent>
+    array(It&& start, Sent&& stop) {
+        std::copy(start, stop, begin());
+    }
+
+    template <std::ranges::input_range R>
+    array(R&& range) {
+        std::ranges::copy(range, begin());
+    }
+
     array(array&&) = delete;
 
-    array& operator=(array&);
+    array& operator=(array& other) { std::ranges::copy(other, begin()); }
 
     template <std::size_t I>
     constexpr std::tuple_element_t<I, reference> get(std::size_t idx) {
@@ -139,13 +159,13 @@ public:
     }
 
     constexpr reverse_iterator rend() {
-        return reverse_iterator { _data - sizeof(T); }
+        return reverse_iterator{_data - sizeof(T)};
     }
     constexpr const_reverse_iterator rend() const {
-        return const_reverse_iterator { _data - sizeof(T); }
+        return const_reverse_iterator{_data - sizeof(T)};
     }
     constexpr const_reverse_iterator rcend() const {
-        return const_reverse_iterator { _data - sizeof(T); }
+        return const_reverse_iterator{_data - sizeof(T)};
     }
 
     constexpr bool empty() const noexcept { return N == 0; }
@@ -164,74 +184,136 @@ public:
 
 template <std::size_t N, class T, class... Ts>
 template <bool Const>
-class array<N, T, Ts...>::iterator {
+class array<N, T, Ts...>::_iterator {
     using data_type = std::conditional_t<Const, const std::byte*, std::byte>;
     data_type _data;
 
     friend class array;
 
-    iterator() = delete;
-    explicit iterator(data_type data) : _data(data) {}
+    _iterator() = delete;
+    explicit _iterator(data_type data) : _data(data) {}
 
 public:
     using value_type = array::value_type;
-    using reference_type =
+    using reference =
         std::conditional_t<Const, array::const_reference, array::reference>;
-    using const_reference_type =
+    using const_reference =
         std::conditional_t<Const, array::const_reference, array::reference>;
     using iterator_concept = std::random_access_iterator_tag;
     using difference_type = std::ptrdiff_t;
 
-    iterator(iterator) = default;
+    _iterator(const _iterator&) = default;
 
     template <bool OtherConst>
         requires Const
-    iterator(iterator<OtherCost> other) : _data(other._data) {}
+    _iterator(_iterator<OtherConst> other) : _data(other._data) {}
 
     template <std::size_t I>
-    std::conditional_t<Const, const std::tuple_element_t<I, value_type>*,
-                       std::tuple_element_t<I, value_type>*>
-    data() {
-        // TODO
+    using column_type =
+        std::conditional_t<Const, const std::tuple_element_t<I, value_type>*,
+                           std::tuple_element_t<I, value_type>*>;
+
+    template <std::size_t I>
+    column_type<I> data() {
+        return reinterpret_cast<column_type<I>>(_data +
+                                                array::column_stride<I>);
     }
 
     template <std::size_t I>
     const std::tuple_element_t<I, value_type>* data() const {
-        // TODO
+        return reinterpret_cast<std::tuple_element_t<I, value_type>*>(
+            _data + array::column_stride<I>);
+    }
+
+    template <std::size_t I>
+    std::tuple_element_t<I, reference> get(difference_type n) {
+        return *(data() + n);
+    }
+
+    template <std::size_t I>
+    std::tuple_element_t<I, const_reference> get(difference_type n) const {
+        return *(data() + n);
     }
 
     reference operator*() {
-        // TODO
+        return [this]<std::size_t... Is>(std::index_sequence<Is...>) {
+            return std::tie(*data<Is>()...);
+        }(array::index_sequence{});
     }
 
     const_reference operator*() const {
-        // TODO
+        return [this]<std::size_t... Is>(std::index_sequence<Is...>) {
+            return std::tie(*data<Is>()...);
+        }(array::index_sequence{});
     }
 
-    iterator& operator++() {
+    _iterator& operator++() {
         _data += sizeof(T);
         return *this;
     }
-    void opperator++() { _data += sizeof(T); }
 
-    constexpr iterator operator++(int) {
+    constexpr _iterator operator++(int) {
         auto temp = *this;
         _data += sizeof(T);
         return temp;
     }
 
-    iterator& operator--();
-    iterator operator--(int);
-    iterator& operator+=(difference_type n);
-    iterator& operator-=(difference_type n);
-    reference operator[](difference_type n);
-    friend auto operator<=>(const interator& lhs, const iterator& rhs) {
+    constexpr _iterator& operator--() {
+        _data -= sizeof(T);
+        return *this;
+    }
+
+    constexpr _iterator operator--(int) {
+        auto temp = *this;
+        _data -= sizeof(T);
+        return temp;
+    }
+
+    _iterator& operator+=(difference_type n) {
+        _data += sizeof(T) * n;
+        return *this;
+    }
+
+    _iterator& operator-=(difference_type n) {
+        _data -= sizeof(T) * n;
+        return *this;
+    }
+
+    reference operator[](difference_type n) {
+        return [this, n]<std::size_t... Is>(std::index_sequence<Is...>) {
+            return std::tie(get<Is>(n)...);
+        }(array::index_sequence{});
+    }
+
+    const_reference operator[](difference_type n) const {
+        return [this, n]<std::size_t... Is>(std::index_sequence<Is...>) {
+            return std::tie(get<Is>(n)...);
+        }(array::index_sequence{});
+    }
+
+    friend auto operator<=>(const _iterator& lhs, const _iterator& rhs) {
         return lhs._data <=> rhs._data;
     }
-    iterator operator+(const iterator& lhs, difference_type rhs);
-    iterator operator+(difference_type lhs, const iterator& rhs);
-    iterator operator-(const iterator& lhs, difference_type rhs);
-    iterator operator-(difference_type lhs, const iterator& rhs);
-    difference_type operator-(const iterator& lhs, const iterator& rhs);
+
+    friend _iterator operator+(const _iterator& lhs, difference_type rhs) {
+        return _iterator{lhs._data + sizeof(T) * rhs};
+    }
+
+    friend _iterator operator+(difference_type lhs, const _iterator& rhs) {
+        return _iterator{rhs._data + sizeof(T) * lhs};
+    }
+
+    friend _iterator operator-(const _iterator& lhs, difference_type rhs) {
+        return _iterator{lhs._data - sizeof(T) * rhs};
+    }
+
+    friend _iterator operator-(difference_type lhs, const _iterator& rhs) {
+        return _iterator{rhs._data - sizeof(T) * lhs};
+    }
+
+    friend difference_type operator-(const _iterator& lhs,
+                                     const _iterator& rhs) {
+        return (lhs._data - rhs._data) / sizeof(T);
+    }
 };
 }  // namespace multi
