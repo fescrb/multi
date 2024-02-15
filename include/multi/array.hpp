@@ -51,7 +51,7 @@ public:
     using const_reference = std::tuple<const T&, const Ts&...>;
 
     using iterator = _iterator<false>;
-    using const_iterator = _iterator<false>;
+    using const_iterator = _iterator<true>;
     using reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<iterator>;
 
@@ -64,14 +64,7 @@ public:
 
     array() {}
     array(const array& other) { operator=(other); }
-    array(std::initializer_list<value_type> l) {
-        std::copy(l.begin(), l.end(), begin());
-    }
-
-    template <std::input_iterator It, std::sentinel_for<It> Sent>
-    array(It start, Sent stop) {
-        std::copy(start, stop, begin());
-    }
+    array(const value_type (&a)[N]) { std::copy(a, a + N, begin()); }
 
     template <std::input_iterator It, std::sentinel_for<It> Sent>
     array(It&& start, Sent&& stop) {
@@ -85,7 +78,10 @@ public:
 
     array(array&&) = delete;
 
-    array& operator=(array& other) { std::ranges::copy(other, begin()); }
+    array& operator=(const array& other) {
+        std::ranges::copy(other, begin());
+        return *this;
+    }
 
     template <std::size_t I>
     constexpr std::tuple_element_t<I, reference> get(std::size_t idx) {
@@ -136,9 +132,11 @@ public:
                                                        column_stride<I>);
     }
 
-    constexpr iterator begin() { return iterator{_data}; }
-    constexpr const_iterator begin() const { return const_iterator{_data}; }
-    constexpr const_iterator cbegin() const { return const_iterator{_data}; }
+    iterator begin() noexcept { return iterator{_data}; }
+    const_iterator begin() const noexcept { return const_iterator{_data}; }
+    constexpr const_iterator cbegin() const noexcept {
+        return const_iterator{_data};
+    }
 
     constexpr iterator end() { return iterator{_data + sizeof(T) * N}; }
     constexpr const_iterator end() const {
@@ -169,8 +167,8 @@ public:
     }
 
     constexpr bool empty() const noexcept { return N == 0; }
-    constexpr bool size() const noexcept { return N; }
-    constexpr bool max_size() const noexcept { return N; }
+    constexpr std::size_t size() const noexcept { return N; }
+    constexpr std::size_t max_size() const noexcept { return N; }
 
     constexpr auto operator==(const array& rhs) const {
         return std::ranges::equal(*this, rhs);
@@ -185,24 +183,27 @@ public:
 template <std::size_t N, class T, class... Ts>
 template <bool Const>
 class array<N, T, Ts...>::_iterator {
-    using data_type = std::conditional_t<Const, const std::byte*, std::byte>;
-    data_type _data;
+    using data_type = std::conditional_t<Const, const std::byte*, std::byte*>;
+    data_type _data = nullptr;
 
     friend class array;
 
-    _iterator() = delete;
     explicit _iterator(data_type data) : _data(data) {}
 
 public:
-    using value_type = array::value_type;
-    using reference =
+    using value_type =
         std::conditional_t<Const, array::const_reference, array::reference>;
-    using const_reference =
-        std::conditional_t<Const, array::const_reference, array::reference>;
-    using iterator_concept = std::random_access_iterator_tag;
+    using reference = value_type;
+    using const_reference = array::const_reference;
+    using iterator_category = std::random_access_iterator_tag;
     using difference_type = std::ptrdiff_t;
 
+    _iterator() = default;
     _iterator(const _iterator&) = default;
+    _iterator(_iterator&&) = default;
+
+    _iterator& operator=(const _iterator&) = default;
+    _iterator& operator=(_iterator&&) = default;
 
     template <bool OtherConst>
         requires Const
@@ -210,8 +211,9 @@ public:
 
     template <std::size_t I>
     using column_type =
-        std::conditional_t<Const, const std::tuple_element_t<I, value_type>*,
-                           std::tuple_element_t<I, value_type>*>;
+        std::conditional_t<Const,
+                           const std::tuple_element_t<I, array::value_type>*,
+                           std::tuple_element_t<I, array::value_type>*>;
 
     template <std::size_t I>
     column_type<I> data() {
@@ -220,9 +222,9 @@ public:
     }
 
     template <std::size_t I>
-    const std::tuple_element_t<I, value_type>* data() const {
-        return reinterpret_cast<std::tuple_element_t<I, value_type>*>(
-            _data + array::column_stride<I>);
+    column_type<I> data() const {
+        return reinterpret_cast<column_type<I>>(_data +
+                                                array::column_stride<I>);
     }
 
     template <std::size_t I>
@@ -231,23 +233,25 @@ public:
     }
 
     template <std::size_t I>
-    std::tuple_element_t<I, const_reference> get(difference_type n) const {
+    std::tuple_element_t<I, reference> get(difference_type n) const {
         return *(data() + n);
     }
 
     reference operator*() {
-        return [this]<std::size_t... Is>(std::index_sequence<Is...>) {
-            return std::tie(*data<Is>()...);
-        }(array::index_sequence{});
+        return
+            [this]<std::size_t... Is>(std::index_sequence<Is...>) -> reference {
+                return std::tie(*data<Is>()...);
+            }(array::index_sequence{});
     }
 
-    const_reference operator*() const {
-        return [this]<std::size_t... Is>(std::index_sequence<Is...>) {
-            return std::tie(*data<Is>()...);
-        }(array::index_sequence{});
+    reference operator*() const {
+        return
+            [this]<std::size_t... Is>(std::index_sequence<Is...>) -> reference {
+                return std::tie(*data<Is>()...);
+            }(array::index_sequence{});
     }
 
-    _iterator& operator++() {
+    constexpr _iterator& operator++() {
         _data += sizeof(T);
         return *this;
     }
@@ -291,7 +295,21 @@ public:
         }(array::index_sequence{});
     }
 
-    friend auto operator<=>(const _iterator& lhs, const _iterator& rhs) {
+    template <bool OtherCost>
+    friend bool operator==(const _iterator& lhs,
+                           const _iterator<OtherCost>& rhs) {
+        return lhs._data == rhs._data;
+    }
+
+    template <bool OtherCost>
+    friend bool operator!=(const _iterator& lhs,
+                           const _iterator<OtherCost>& rhs) {
+        return lhs._data != rhs._data;
+    }
+
+    template <bool OtherCost>
+    friend auto operator<=>(const _iterator& lhs,
+                            const _iterator<OtherCost>& rhs) {
         return lhs._data <=> rhs._data;
     }
 
