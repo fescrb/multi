@@ -13,7 +13,8 @@ list(APPEND sources ${CMAKE_CURRENT_SOURCE_DIR}/details/max_alignof.cpp
                     ${CMAKE_CURRENT_SOURCE_DIR}/vector.cpp
                     ${CMAKE_CURRENT_SOURCE_DIR}/vector_iterator.cpp
                     ${CMAKE_CURRENT_SOURCE_DIR}/vector_const_iterator.cpp
-                    ${CMAKE_CURRENT_SOURCE_DIR}/select.cpp)
+                    ${CMAKE_CURRENT_SOURCE_DIR}/select.cpp
+                    ${CMAKE_CURRENT_SOURCE_DIR}/reference_tuple.cpp)
 
 add_executable(tests ${sources})
 
