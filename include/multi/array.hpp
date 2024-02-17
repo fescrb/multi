@@ -13,6 +13,8 @@
 #include <multi/details/multiple.hpp>
 #include <multi/details/packed_sizeof.hpp>
 #include <multi/details/type_sequence.hpp>
+#include <multi/reference_tuple.hpp>
+#include <multi/tuple_element.hpp>
 
 namespace multi {
 
@@ -47,8 +49,8 @@ public:
     using value_type = std::tuple<T, Ts...>;
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
-    using reference = std::tuple<T&, Ts&...>;
-    using const_reference = std::tuple<const T&, const Ts&...>;
+    using reference = reference_tuple<T, Ts...>;
+    using const_reference = reference_tuple<const T, const Ts...>;
 
     using iterator = _iterator<false>;
     using const_iterator = _iterator<true>;
@@ -57,52 +59,52 @@ public:
 
     template <std::size_t I>
         requires(I < num_columns)
-    using pointer_type = std::tuple_element_t<I, value_type>*;
+    using pointer_type = tuple_element_t<I, value_type>*;
     template <std::size_t I>
         requires(I < num_columns)
-    using const_pointer_type = const std::tuple_element_t<I, value_type>*;
+    using const_pointer_type = const tuple_element_t<I, value_type>*;
 
     array() {}
     array(const array& other) { operator=(other); }
     array(const value_type (&a)[N]) { std::copy(a, a + N, begin()); }
 
     template <std::input_iterator It, std::sentinel_for<It> Sent>
-    array(It&& start, Sent&& stop) {
-        std::copy(start, stop, begin());
+    explicit array(It&& start, Sent&& stop) {
+        std::copy(std::forward<It>(start), std::forward<Sent>(stop), begin());
     }
 
     template <std::ranges::input_range R>
-    array(R&& range) {
-        std::ranges::copy(range, begin());
+    explicit array(R&& range) {
+        std::ranges::copy(std::forward<R>(range), begin());
     }
 
     array(array&&) = delete;
 
-    array& operator=(const array& other) {
-        std::ranges::copy(other, begin());
+    template <std::ranges::input_range R>
+    array& operator=(R&& range) {
+        std::ranges::copy(std::forward<R>(range), begin());
         return *this;
     }
 
     template <std::size_t I>
-    constexpr std::tuple_element_t<I, reference> get(std::size_t idx) {
+    constexpr tuple_element_t<I, reference> get(std::size_t idx) {
         return *(data<I>() + idx);
     }
 
     template <std::size_t I>
-    constexpr std::tuple_element_t<I, const_reference> get(
-        std::size_t idx) const {
+    constexpr tuple_element_t<I, const_reference> get(std::size_t idx) const {
         return *(data<I>() + idx);
     }
 
     constexpr reference operator[](std::size_t idx) {
         return [this, idx]<std::size_t... Is>(std::index_sequence<Is...>) {
-            return std::tie(get<Is>(idx)...);
+            return reference(get<Is>(idx)...);
         }(index_sequence{});
     }
 
     constexpr const_reference operator[](std::size_t idx) const {
         return [this, idx]<std::size_t... Is>(std::index_sequence<Is...>) {
-            return std::tie(get<Is>(idx)...);
+            return const_reference(get<Is>(idx)...);
         }(index_sequence{});
     }
 
@@ -132,38 +134,32 @@ public:
                                                        column_stride<I>);
     }
 
-    iterator begin() noexcept { return iterator{_data}; }
-    const_iterator begin() const noexcept { return const_iterator{_data}; }
+    iterator begin() noexcept { return iterator{_data, 0}; }
+    const_iterator begin() const noexcept { return const_iterator{_data, 0}; }
     constexpr const_iterator cbegin() const noexcept {
-        return const_iterator{_data};
+        return const_iterator{_data, 0};
     }
 
-    constexpr iterator end() { return iterator{_data + sizeof(T) * N}; }
-    constexpr const_iterator end() const {
-        return const_iterator{_data + sizeof(T) * N};
-    }
-    constexpr const_iterator cend() const {
-        return const_iterator{_data + sizeof(T) * N};
-    }
+    constexpr iterator end() { return iterator{_data, N}; }
+    constexpr const_iterator end() const { return const_iterator{_data, N}; }
+    constexpr const_iterator cend() const { return const_iterator{_data, N}; }
 
     constexpr reverse_iterator rbegin() {
-        return reverse_iterator{_data + sizeof(T) * (N - 1)};
+        return reverse_iterator{_data, N - 1};
     }
     constexpr const_reverse_iterator rbegin() const {
-        return const_reverse_iterator{_data + sizeof(T) * (N - 1)};
+        return const_reverse_iterator{_data, N - 1};
     }
     constexpr const_reverse_iterator crbegin() const {
-        return const_reverse_iterator{_data + sizeof(T) * (N - 1)};
+        return const_reverse_iterator{_data, N - 1};
     }
 
-    constexpr reverse_iterator rend() {
-        return reverse_iterator{_data - sizeof(T)};
-    }
+    constexpr reverse_iterator rend() { return reverse_iterator{_data, -1}; }
     constexpr const_reverse_iterator rend() const {
-        return const_reverse_iterator{_data - sizeof(T)};
+        return const_reverse_iterator{_data, -1};
     }
     constexpr const_reverse_iterator rcend() const {
-        return const_reverse_iterator{_data - sizeof(T)};
+        return const_reverse_iterator{_data, -1};
     }
 
     constexpr bool empty() const noexcept { return N == 0; }
@@ -185,10 +181,12 @@ template <bool Const>
 class array<N, T, Ts...>::_iterator {
     using data_type = std::conditional_t<Const, const std::byte*, std::byte*>;
     data_type _data = nullptr;
+    array::difference_type _index = 0;
 
     friend class array;
 
-    explicit _iterator(data_type data) : _data(data) {}
+    explicit _iterator(data_type data, array::difference_type index)
+        : _data(data), _index{index} {}
 
 public:
     using value_type =
@@ -207,13 +205,13 @@ public:
 
     template <bool OtherConst>
         requires Const
-    _iterator(_iterator<OtherConst> other) : _data(other._data) {}
+    _iterator(_iterator<OtherConst> other)
+        : _data(other._data), _index(other._index) {}
 
     template <std::size_t I>
     using column_type =
-        std::conditional_t<Const,
-                           const std::tuple_element_t<I, array::value_type>*,
-                           std::tuple_element_t<I, array::value_type>*>;
+        std::conditional_t<Const, const tuple_element_t<I, array::value_type>*,
+                           tuple_element_t<I, array::value_type>*>;
 
     template <std::size_t I>
     column_type<I> data() {
@@ -228,110 +226,111 @@ public:
     }
 
     template <std::size_t I>
-    std::tuple_element_t<I, reference> get(difference_type n) {
-        return *(data() + n);
+    tuple_element_t<I, reference> get(difference_type n = 0) {
+        return *(data<I>() + _index + n);
     }
 
     template <std::size_t I>
-    std::tuple_element_t<I, reference> get(difference_type n) const {
-        return *(data() + n);
+    tuple_element_t<I, reference> get(difference_type n = 0) const {
+        return *(data<I>() + _index + n);
     }
 
     reference operator*() {
         return
             [this]<std::size_t... Is>(std::index_sequence<Is...>) -> reference {
-                return std::tie(*data<Is>()...);
+                return reference{get<Is>()...};
             }(array::index_sequence{});
     }
 
     reference operator*() const {
         return
             [this]<std::size_t... Is>(std::index_sequence<Is...>) -> reference {
-                return std::tie(*data<Is>()...);
+                return reference(get<Is>()...);
             }(array::index_sequence{});
     }
 
     constexpr _iterator& operator++() {
-        _data += sizeof(T);
+        ++_index;
         return *this;
     }
 
     constexpr _iterator operator++(int) {
         auto temp = *this;
-        _data += sizeof(T);
+        ++_index;
         return temp;
     }
 
     constexpr _iterator& operator--() {
-        _data -= sizeof(T);
+        --_index;
         return *this;
     }
 
     constexpr _iterator operator--(int) {
         auto temp = *this;
-        _data -= sizeof(T);
+        --_index;
         return temp;
     }
 
     _iterator& operator+=(difference_type n) {
-        _data += sizeof(T) * n;
+        _index += n;
         return *this;
     }
 
     _iterator& operator-=(difference_type n) {
-        _data -= sizeof(T) * n;
+        _index -= n;
         return *this;
     }
 
     reference operator[](difference_type n) {
         return [this, n]<std::size_t... Is>(std::index_sequence<Is...>) {
-            return std::tie(get<Is>(n)...);
+            return reference(get<Is>(n)...);
         }(array::index_sequence{});
     }
 
-    const_reference operator[](difference_type n) const {
+    reference operator[](difference_type n) const {
         return [this, n]<std::size_t... Is>(std::index_sequence<Is...>) {
-            return std::tie(get<Is>(n)...);
+            return reference(get<Is>(n)...);
         }(array::index_sequence{});
     }
 
     template <bool OtherCost>
     friend bool operator==(const _iterator& lhs,
                            const _iterator<OtherCost>& rhs) {
-        return lhs._data == rhs._data;
+        return lhs._index == rhs._index;
     }
 
     template <bool OtherCost>
     friend bool operator!=(const _iterator& lhs,
                            const _iterator<OtherCost>& rhs) {
-        return lhs._data != rhs._data;
+        return lhs._index != rhs._index;
     }
 
     template <bool OtherCost>
     friend auto operator<=>(const _iterator& lhs,
                             const _iterator<OtherCost>& rhs) {
-        return lhs._data <=> rhs._data;
+        return lhs._index <=> rhs._index;
     }
 
     friend _iterator operator+(const _iterator& lhs, difference_type rhs) {
-        return _iterator{lhs._data + sizeof(T) * rhs};
+        return _iterator{lhs._data, lhs._index + rhs};
     }
 
     friend _iterator operator+(difference_type lhs, const _iterator& rhs) {
-        return _iterator{rhs._data + sizeof(T) * lhs};
+        return _iterator{rhs._data, rhs._index + lhs};
     }
 
     friend _iterator operator-(const _iterator& lhs, difference_type rhs) {
-        return _iterator{lhs._data - sizeof(T) * rhs};
+        return _iterator{lhs._data, lhs._index - rhs};
     }
 
     friend _iterator operator-(difference_type lhs, const _iterator& rhs) {
-        return _iterator{rhs._data - sizeof(T) * lhs};
+        return _iterator{rhs._data, rhs._index - rhs};
     }
 
     friend difference_type operator-(const _iterator& lhs,
                                      const _iterator& rhs) {
-        return (lhs._data - rhs._data) / sizeof(T);
+        return lhs._index - rhs._index;
     }
 };
+
 }  // namespace multi

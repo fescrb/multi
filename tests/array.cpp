@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include "print.hpp"
 #include <multi/array.hpp>
 
 using namespace multi;
@@ -35,6 +36,12 @@ TEST(array, array_initialization) {
     }};
 
     EXPECT_EQ(array.size(), 5);
+
+    EXPECT_EQ(array[0], std::make_tuple(false, 0, 0.0));
+    EXPECT_EQ(array[1], std::make_tuple(false, 1, 1.0));
+    EXPECT_EQ(array[2], std::make_tuple(false, 2, 2.0));
+    EXPECT_EQ(array[3], std::make_tuple(false, 3, 3.0));
+    EXPECT_EQ(array[4], std::make_tuple(false, 4, 4.0));
 }
 
 TEST(array, copy_initialization) {
@@ -46,13 +53,113 @@ TEST(array, copy_initialization) {
         {false, 4, 4.0},
     }};
 
-    auto b = array.cbegin();
-    auto e = array.cend();
+    auto copy = array;
 
-    // Our reference type being std::tuple<Ts&...> means we cannot satisfy
-    // indirectly_writable See: https://github.com/ericniebler/stl2/issues/381
-    // We will need to create a reference tuple type that remains assignable
-    // when const auto copy = array;
+    *copy.begin() = *array.begin();
 
-    // EXPECT_EQ(array, copy);
+    EXPECT_EQ(array, copy);
+}
+
+TEST(array, range_initialization) {
+    std::array<std::tuple<bool, int, double>, 5> std_array = {{
+        {false, 0, 0.0},
+        {false, 1, 1.0},
+        {false, 2, 2.0},
+        {false, 3, 3.0},
+        {false, 4, 4.0},
+    }};
+
+    auto copy = array<5, bool, int, double>(std_array);
+
+    EXPECT_TRUE(std::ranges::equal(std_array, copy));
+}
+
+TEST(array, iterator_initialization) {
+    std::array<std::tuple<bool, int, double>, 5> std_array = {{
+        {false, 0, 0.0},
+        {false, 1, 1.0},
+        {false, 2, 2.0},
+        {false, 3, 3.0},
+        {false, 4, 4.0},
+    }};
+
+    auto copy = array<5, bool, int, double>(std_array.begin(), std_array.end());
+
+    EXPECT_TRUE(std::ranges::equal(std_array, copy));
+}
+
+TEST(array, front_back) {
+    array<5, bool, int, double> array = {{
+        {false, 0, 0.0},
+        {false, 1, 1.0},
+        {false, 2, 2.0},
+        {false, 3, 3.0},
+        {false, 4, 4.0},
+    }};
+
+    EXPECT_EQ(array.front(), std::make_tuple(false, 0, 0.0));
+    EXPECT_EQ(array.back(), std::make_tuple(false, 4, 4.0));
+}
+
+TEST(array, array_access) {
+    std::array<std::tuple<bool, int, double>, 5> std_array = {{
+        {false, 0, 0.0},
+        {false, 1, 1.0},
+        {false, 2, 2.0},
+        {false, 3, 3.0},
+        {false, 4, 4.0},
+    }};
+
+    auto copy = array<5, bool, int, double>(std_array);
+
+    for (size_t i = 0; i < copy.size(); i++) {
+        EXPECT_EQ(std_array[i], copy[i]);
+        EXPECT_EQ(std_array.at(i), copy.at(i));
+    }
+}
+
+TEST(array, get) {
+    std::array<std::tuple<bool, int, double>, 5> std_array = {{
+        {false, 0, 0.0},
+        {false, 1, 1.0},
+        {false, 2, 2.0},
+        {false, 3, 3.0},
+        {false, 4, 4.0},
+    }};
+
+    auto copy = array<5, bool, int, double>(std_array);
+
+    for (size_t i = 0; i < copy.size(); i++) {
+        EXPECT_EQ(std::get<0>(std_array[i]), copy.get<0>(i));
+        EXPECT_EQ(std::get<1>(std_array[i]), copy.get<1>(i));
+        EXPECT_EQ(std::get<2>(std_array[i]), copy.get<2>(i));
+    }
+}
+
+TEST(array, assign) {
+    array<5, bool, int, double> original = {{
+        {false, 0, 0.0},
+        {false, 1, 1.0},
+        {false, 2, 2.0},
+        {false, 3, 3.0},
+        {false, 4, 4.0},
+    }};
+
+    auto copy = array<5, bool, int, double>();
+
+    copy = original;
+
+    EXPECT_TRUE(std::ranges::equal(original, copy));
+
+    std::array<std::tuple<bool, int, double>, 5> std_array = {{
+        {true, 0, 00.0},
+        {true, 10, 10.0},
+        {true, 20, 20.0},
+        {true, 30, 30.0},
+        {true, 40, 40.0},
+    }};
+
+    copy = std_array;
+
+    EXPECT_TRUE(std::ranges::equal(std_array, copy));
 }

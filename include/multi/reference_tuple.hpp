@@ -11,39 +11,125 @@
 namespace multi {
 
 template <class... Ts>
-    requires(sizeof...(Ts) > 1)
+    requires(sizeof...(Ts) > 0)
 class reference_tuple {
     using value_type = std::tuple<Ts...>;
     using reference = std::tuple<Ts&...>;
+    using pointer = std::tuple<Ts*...>;
     static constexpr std::size_t num_elements = sizeof...(Ts);
     using index_sequence = std::make_index_sequence<num_elements>;
-    void* _refs[num_elements];
+    pointer _refs;
+
+    template <class T>
+    static T& identity(T& t) {
+        return t;
+    }
+
+    template <class T>
+    static T& identity(T&& t) = delete;
 
 public:
     template <std::size_t I>
-    friend std::tuple_element_t<I, value_type>& get(
-        const reference_tuple& tuple) {
-        return *static_cast<std::tuple_element_t<I, value_type>*>(
-            tuple._refs[I]);
+    std::tuple_element_t<I, reference> get() const {
+        return *std::get<I>(this->_refs);
     }
 
-    explicit reference_tuple(Ts&... refs) : _refs{std::addressof(refs)...} {}
+    template <class... Us>
+        requires requires(Us... us) {
+            pointer{std::addressof(identity(std::forward<Us>(us)))...};
+        }
+    explicit reference_tuple(Us&&... refs)
+        : _refs{std::addressof(identity(std::forward<Us>(refs)))...} {}
 
-    operator reference() const {
-        return [this]<std::size_t... Is>(std::index_sequence<Is...>) {
-            return reference{get<Is>(*this)...};
+    template <class... Us>
+    friend auto tail(const reference_tuple& rhs) {
+        return [&rhs]<std::size_t I, std::size_t... Is>(
+                   std::index_sequence<I, Is...>) {
+            return reference_tuple<std::tuple_element_t<Is, value_type>...>{
+                rhs.get<Is>()...};
         }(index_sequence{});
     }
 
-    reference_tuple& operator=(const std::tuple<Ts...>& val) {
-        static_cast<reference>(*this) = val;
+    reference tie() const {
+        return [this]<std::size_t... Is>(std::index_sequence<Is...>) {
+            return reference{get<Is>()...};
+        }(index_sequence{});
+    }
+
+    operator reference() const { return tie(); }
+
+    value_type tuple() const {
+        return [this]<std::size_t... Is>(std::index_sequence<Is...>) {
+            return value_type{get<Is>()...};
+        }(index_sequence{});
+    }
+
+    operator value_type() const { return tuple(); }
+
+    template <class... Us>
+        requires std::assignable_from<reference&, std::tuple<Us...>>
+    reference_tuple& operator=(const std::tuple<Us...>& val) {
+        tie() = val;
         return *this;
     }
 
-    const reference_tuple& operator=(const std::tuple<Ts...>& val) const {
-        static_cast<reference>(*this) = val;
+    template <class... Us>
+        requires std::assignable_from<reference&, std::tuple<Us&...>>
+    reference_tuple& operator=(const reference_tuple<Us...>& val) {
+        tie() = val.tie();
         return *this;
     }
+
+    template <class... Us>
+        requires std::assignable_from<reference&, std::tuple<Us...>>
+    const reference_tuple& operator=(const std::tuple<Us...>& val) const {
+        tie() = val;
+        return *this;
+    }
+
+    template <class... Us>
+        requires std::assignable_from<reference&, std::tuple<Us&...>>
+    const reference_tuple& operator=(const reference_tuple<Us...>& val) const {
+        tie() = val.tie();
+        return *this;
+    }
+
+    reference_tuple& operator=(const reference_tuple& val) {
+        tie() = val.tie();
+        return *this;
+    }
+
+    const reference_tuple& operator=(const reference_tuple& val) const {
+        tie() = val.tie();
+        return *this;
+    }
+
+    template <class... Us>
+    bool operator==(const reference_tuple<Us...>& rhs) const {
+        return tie() == rhs.tie();
+    }
+
+    template <class... Us>
+    auto operator<=>(const reference_tuple<Us...>& rhs) const {
+        return tie() <=> rhs.tie();
+    }
+    template <class... Us>
+    bool operator==(const std::tuple<Us...>& rhs) const {
+        return tie() == rhs;
+    }
+
+    template <class... Us>
+    auto operator<=>(const std::tuple<Us...>& rhs) const {
+        return tie() <=> rhs;
+    }
 };
+
+template <class... Ts>
+reference_tuple(Ts&...) -> reference_tuple<Ts...>;
+
+template <std::size_t I, class... Ts>
+decltype(auto) get(const reference_tuple<Ts...>& t) noexcept {
+    return t.template get<I>();
+}
 
 }  // namespace multi
