@@ -9,6 +9,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include <multi/get.hpp>
 #include <multi/select.hpp>
 #include <multi/vector.hpp>
 
@@ -21,7 +22,7 @@ static void BM_single_select_iterate(benchmark::State& state) {
     for (std::size_t _ = 0; _ < state.range(0); ++_) v.push_back(val);
     std::tuple_element_t<0, typename Container::value_type> accum = {};
     for (auto _ : state) {
-        for (auto it : v | multi::select<0>) accum += std::get<0>(it);
+        for (auto it : v | multi::select<0>) accum += it;
     }
     benchmark::DoNotOptimize(accum);
 }
@@ -38,8 +39,8 @@ static void BM_select_iterate(benchmark::State& state) {
         accum = {};
     for (auto _ : state) {
         for (auto it : v | multi::select<0, 2>) {
-            std::get<0>(accum) += std::get<0>(it);
-            std::get<1>(accum) += std::get<1>(it);
+            multi::get<0>(accum) += multi::get<0>(it);
+            multi::get<1>(accum) += multi::get<1>(it);
         }
     }
     benchmark::DoNotOptimize(accum);

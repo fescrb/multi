@@ -12,6 +12,8 @@
 #include <utility>
 
 #include "multi/details/tuple_like.hpp"
+#include "multi/get.hpp"
+#include "multi/reference_tuple.hpp"
 
 namespace multi {
 
@@ -100,8 +102,11 @@ class select_view<R, N, Ns...>::iterator {
     using base_iterator_t = std::ranges::iterator_t<base_range_t>;
     base_iterator_t mCurrent = base_iterator_t();
 
-    static constexpr auto get(const base_iterator_t& i) {
-        return std::tie(std::get<N>(*i), std::get<Ns>(*i)...);
+    static constexpr decltype(auto) get(const base_iterator_t& i) {
+        if constexpr (sizeof...(Ns) == 0) return multi::get<N>(*i);
+        if constexpr (sizeof...(Ns) != 0)
+            return multi::reference_tuple{multi::get<N>(*i),
+                                          multi::get<Ns>(*i)...};
     }
 
     template <bool>

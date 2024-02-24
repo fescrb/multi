@@ -10,6 +10,8 @@
 #include <type_traits>
 #include <utility>
 
+#include <multi/reference_tuple.hpp>
+
 namespace multi::details {
 
 template <typename T>
@@ -20,6 +22,9 @@ struct is_tuple_like<std::tuple<Ts...>> : std::true_type {};
 
 template <typename T, typename U>
 struct is_tuple_like<std::pair<T, U>> : std::true_type {};
+
+template <typename... Ts>
+struct is_tuple_like<multi::reference_tuple<Ts...>> : std::true_type {};
 
 template <typename T, size_t S>
 struct is_tuple_like<std::array<T, S>> : std::true_type {};
