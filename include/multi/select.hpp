@@ -223,28 +223,28 @@ public:
                                         difference_type rhs)
         requires std::ranges::random_access_range<base_range_t>
     {
-        return lhs + rhs;
+        return iterator{lhs.mCurrent + rhs};
     }
 
     friend constexpr iterator operator+(difference_type lhs,
                                         const iterator& rhs)
         requires std::ranges::random_access_range<base_range_t>
     {
-        return lhs + rhs;
+        return iterator{rhs.mCurrent + lhs};
     }
 
     friend constexpr iterator operator-(const iterator& lhs,
                                         difference_type rhs)
         requires std::ranges::random_access_range<base_range_t>
     {
-        return lhs - rhs;
+        return iterator{lhs.mCurrent - rhs};
     }
 
     friend constexpr iterator operator-(difference_type lhs,
                                         const iterator& rhs)
         requires std::ranges::random_access_range<base_range_t>
     {
-        return lhs - rhs;
+        return iterator{rhs.mCurrent - lhs};
     }
 
     friend constexpr difference_type operator-(const iterator& lhs,
@@ -312,7 +312,7 @@ template <std::size_t I, std::size_t... Is>
 struct select_fn final {
     template <std::ranges::range R>
     auto operator()(R&& range) const {
-        return select_view<std::views::all_t<R&&>, I, Is...>(
+        return select_view<std::views::all_t<R>, I, Is...>(
             std::forward<R>(range));
     }
 

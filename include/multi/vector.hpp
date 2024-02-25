@@ -46,6 +46,12 @@ public:
         operator=(other);
     }
 
+    vector(const std::size_t& size, allocator_type allocator = allocator_type())
+        : _data(nullptr), _size(0), _capacity(0), _allocator(allocator) {
+        reserve(size);
+        _size = size;
+    }
+
     vector(vector&& other) { operator=(std::move(other)); }
 
     ~vector() {
