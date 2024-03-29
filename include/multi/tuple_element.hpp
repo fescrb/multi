@@ -7,8 +7,6 @@
 
 #include <tuple>
 
-#include <multi/reference_tuple.hpp>
-
 namespace multi {
 
 template <std::size_t I, class T>
@@ -17,10 +15,6 @@ struct tuple_element;
 template <std::size_t I, class... Ts>
 struct tuple_element<I, std::tuple<Ts...>>
     : std::tuple_element<I, std::tuple<Ts...>> {};
-
-template <std::size_t I, class... Ts>
-struct tuple_element<I, reference_tuple<Ts...>>
-    : std::tuple_element<I, std::tuple<Ts&...>> {};
 
 template <std::size_t I, class T>
 using tuple_element_t = tuple_element<I, T>::type;

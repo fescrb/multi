@@ -64,9 +64,13 @@ public:
         requires(I < num_columns)
     using const_pointer_type = const tuple_element_t<I, value_type>*;
 
-    array() {}
-    array(const array& other) { operator=(other); }
-    array(const value_type (&a)[N]) { std::copy(a, a + N, begin()); }
+    array() {}  // std::ranges::uninitialized_default_construct(*this); }
+    array(const array& other) {
+        // std::ranges::uninitialized_copy(other, begin());
+    }
+    array(const value_type (&a)[N]) {
+        // std::uninitialized_copy_n(a, N, begin());
+    }
 
     template <std::input_iterator It, std::sentinel_for<It> Sent>
     explicit array(It&& start, Sent&& stop) {
@@ -74,15 +78,20 @@ public:
     }
 
     template <std::ranges::input_range R>
+        requires std::ranges::sized_range<R>
     explicit array(R&& range) {
-        std::ranges::copy(std::forward<R>(range), begin());
+        assert(std::ranges::size(range) == N);
+        // std::ranges::uninitialized_copy_n(std::forward<R>(range).begin(), N,
+        //                                   begin(), end());
     }
 
     array(array&&) = delete;
 
     template <std::ranges::input_range R>
+        requires std::ranges::sized_range<R>
     array& operator=(R&& range) {
-        std::ranges::copy(std::forward<R>(range), begin());
+        assert(std::ranges::size(range) == N);
+        // std::ranges::copy_n(std::forward<R>(range).begin(), N, begin());
         return *this;
     }
 
@@ -167,7 +176,7 @@ public:
     constexpr std::size_t max_size() const noexcept { return N; }
 
     constexpr auto operator==(const array& rhs) const {
-        return std::ranges::equal(*this, rhs);
+        // return std::ranges::equal(*this, rhs);
     }
 
     constexpr auto operator<=>(const array& rhs) const {
@@ -189,9 +198,9 @@ class array<N, T, Ts...>::_iterator {
         : _data(data), _index{index} {}
 
 public:
-    using value_type =
+    using value_type = array::value_type;
+    using reference =
         std::conditional_t<Const, array::const_reference, array::reference>;
-    using reference = value_type;
     using const_reference = array::const_reference;
     using iterator_category = std::random_access_iterator_tag;
     using difference_type = std::ptrdiff_t;

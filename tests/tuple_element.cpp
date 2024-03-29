@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include <multi/reference_tuple.hpp>
 #include <multi/tuple_element.hpp>
 
 using namespace multi;
